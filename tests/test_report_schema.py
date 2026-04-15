@@ -20,7 +20,7 @@ FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 def _minimal_issue(**overrides: object) -> dict:
     base = {
         "id": "i-1",
-        "category": "missing",
+        "category": "dq",
         "severity": "warning",
         "message": "test issue",
     }
@@ -104,9 +104,9 @@ def test_suite_result_negative_checks_rejected() -> None:
 # ── PlanStep model ────────────────────────────────────────────────────────────
 
 def test_plan_step_json_serializable() -> None:
-    step = PlanStep(step_id="s1", step_type=StepType.INGEST)
+    step = PlanStep(step_id="s1", step_type=StepType.PLACEHOLDER)
     data = json.loads(step.model_dump_json())
-    assert data["step_type"] == "ingest"
+    assert data["step_type"] == "placeholder"
 
 
 def test_plan_step_invalid_type_rejected() -> None:
@@ -116,7 +116,7 @@ def test_plan_step_invalid_type_rejected() -> None:
 
 def test_plan_step_extra_field_rejected() -> None:
     with pytest.raises(ValidationError):
-        PlanStep(step_id="s1", step_type="ingest", not_a_field=True)
+        PlanStep(step_id="s1", step_type="placeholder", not_a_field=True)
 
 
 # ── AnalysisReport model ──────────────────────────────────────────────────────
@@ -150,7 +150,7 @@ def test_fixture_issue_loads_and_validates() -> None:
     raw = json.loads((FIXTURES / "example_issue.json").read_text())
     issue = Issue(**raw)
     assert issue.severity == Severity.WARNING
-    assert issue.category == IssueCategory.MISSING
+    assert issue.category == IssueCategory.DQ
 
 
 def test_fixture_suite_result_loads_and_validates() -> None:

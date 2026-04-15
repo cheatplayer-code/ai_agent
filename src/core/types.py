@@ -20,7 +20,6 @@ class TableArtifact:
     df: pd.DataFrame
     source_path: str
     sheet_name: str | None = None
-    encoding: str | None = None
 
     row_count: int = field(init=False)
     column_count: int = field(init=False)

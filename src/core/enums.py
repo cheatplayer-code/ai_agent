@@ -14,23 +14,16 @@ class Severity(str, Enum):
 class IssueCategory(str, Enum):
     """Category of a data quality or analysis issue."""
 
-    MISSING = "missing"
-    DUPLICATE = "duplicate"
-    TYPE_MISMATCH = "type_mismatch"
-    OUTLIER = "outlier"
-    SCHEMA_VIOLATION = "schema_violation"
-    RANGE_VIOLATION = "range_violation"
-    ENCODING = "encoding"
-    OTHER = "other"
+    LOADER = "loader"
+    SCHEMA = "schema"
+    DQ = "dq"
+    ANALYSIS = "analysis"
+    VERIFICATION = "verification"
+    PLANNER = "planner"
+    REPORT = "report"
 
 
 class StepType(str, Enum):
-    """Allowed plan step types for the deterministic planner."""
+    """Minimal placeholder step allowlist for schema-level contracts."""
 
-    INGEST = "ingest"
-    DETECT_SCHEMA = "detect_schema"
-    PROFILE = "profile"
-    QUALITY_CHECK = "quality_check"
-    ANALYZE = "analyze"
-    VERIFY = "verify"
-    BUILD_REPORT = "build_report"
+    PLACEHOLDER = "placeholder"

@@ -4,22 +4,27 @@
   "source_file": "data/sample.csv",
   "summary": "1 warning found in 3 checks.",
   "policy": {
+    "head": 5,
+    "tail": 5,
+    "sample": 20,
     "max_rows": 10000,
-    "sample_size": 1000,
+    "max_cols": 500,
+    "max_cells": 500000,
+    "max_categories_preview": 10,
+    "summary_top_k": 5,
     "random_state": 42,
-    "rounding_digits": 4,
-    "strict_mode": true,
-    "severity_threshold": "warning"
+    "lazy": true,
+    "rounding_digits": 4
   },
   "plan_steps": [
     {
       "step_id": "step-01",
-      "step_type": "ingest",
+      "step_type": "placeholder",
       "params": {"source_file": "data/sample.csv"}
     },
     {
       "step_id": "step-02",
-      "step_type": "quality_check",
+      "step_type": "placeholder",
       "params": {"suite": "basic_quality_suite"}
     }
   ],
@@ -34,7 +39,7 @@
       "issues": [
         {
           "id": "issue-001",
-          "category": "missing",
+          "category": "dq",
           "severity": "warning",
           "column": "email",
           "row_index": 42,

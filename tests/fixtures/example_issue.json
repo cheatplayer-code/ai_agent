@@ -1,6 +1,6 @@
 {
   "id": "issue-001",
-  "category": "missing",
+  "category": "dq",
   "severity": "warning",
   "column": "email",
   "row_index": 42,
