@@ -1,0 +1,9 @@
+{
+  "id": "issue-001",
+  "category": "missing",
+  "severity": "warning",
+  "column": "email",
+  "row_index": 42,
+  "message": "Missing value in column 'email'.",
+  "details": {}
+}

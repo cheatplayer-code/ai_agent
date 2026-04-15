@@ -1,0 +1,47 @@
+{
+  "report_version": "0.1.0",
+  "generated_at": "2026-04-15T20:00:00Z",
+  "source_file": "data/sample.csv",
+  "summary": "1 warning found in 3 checks.",
+  "policy": {
+    "max_rows": 10000,
+    "sample_size": 1000,
+    "random_state": 42,
+    "rounding_digits": 4,
+    "strict_mode": true,
+    "severity_threshold": "warning"
+  },
+  "plan_steps": [
+    {
+      "step_id": "step-01",
+      "step_type": "ingest",
+      "params": {"source_file": "data/sample.csv"}
+    },
+    {
+      "step_id": "step-02",
+      "step_type": "quality_check",
+      "params": {"suite": "basic_quality_suite"}
+    }
+  ],
+  "suite_results": [
+    {
+      "suite_name": "basic_quality_suite",
+      "success": false,
+      "total_checks": 3,
+      "passed_checks": 2,
+      "failed_checks": 1,
+      "run_time_seconds": 0.12,
+      "issues": [
+        {
+          "id": "issue-001",
+          "category": "missing",
+          "severity": "warning",
+          "column": "email",
+          "row_index": 42,
+          "message": "Missing value in column 'email'.",
+          "details": {}
+        }
+      ]
+    }
+  ]
+}
