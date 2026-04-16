@@ -10,12 +10,19 @@ from src.data_quality_checker.checks import get_builtin_checks
 from src.report_builder.schema import ColumnSchema, DetectedSchema
 
 
-def _table(df: pd.DataFrame) -> TableArtifact:
+def _table(
+    df: pd.DataFrame,
+    *,
+    sheet_name: str | None = None,
+    original_columns: list[str] | None = None,
+) -> TableArtifact:
+    source_columns = original_columns if original_columns is not None else df.columns.tolist()
     return TableArtifact(
         df=df,
         source_path="in-memory.csv",
         file_type="csv",
-        original_columns=df.columns.tolist(),
+        sheet_name=sheet_name,
+        original_columns=source_columns,
         normalized_columns=df.columns.tolist(),
     )
 
@@ -91,6 +98,26 @@ def test_duplicate_rows_emits_expected_issue() -> None:
     assert metrics["duplicate_row_count"] == 1
 
 
+def test_duplicate_columns_uses_original_columns_with_shared_normalization() -> None:
+    df = pd.DataFrame({"name": [1], "name_2": [2], "other": [3]})
+    table = _table(df, original_columns=["Name", "  name ", "Other"])
+    issues, metrics = _get_runner("duplicate_columns")(table, _schema_for_df(df), ExecutionPolicy())
+
+    assert len(issues) == 1
+    assert issues[0].details["duplicate_columns"] == ["name"]
+    assert metrics["duplicate_column_count"] == 1
+
+
+def test_column_issue_location_includes_sheet_name_when_available() -> None:
+    df = pd.DataFrame({"a": [1, None]})
+    table = _table(df, sheet_name="DataSheet")
+    issues, _ = _get_runner("missing_values")(table, _schema_for_df(df), ExecutionPolicy())
+
+    assert len(issues) == 1
+    assert issues[0].location is not None
+    assert issues[0].location.sheet_name == "DataSheet"
+
+
 def test_high_cardinality_only_applies_to_string_columns() -> None:
     values = [f"id-{i}" for i in range(12)]
     df = pd.DataFrame({"string_id": values, "numeric_id": list(range(12))})
@@ -144,4 +171,3 @@ def test_empty_column_works() -> None:
     assert issues[0].location is not None
     assert issues[0].location.column_name == "a"
     assert metrics["affected_column_count"] == 1
-
