@@ -41,7 +41,7 @@ def _flatten_issues(dq_suite: SuiteResult | None) -> list[Issue]:
     return issues
 
 
-def _as_str_list(value: Any) -> list[str]:
+def _filter_str_list(value: Any) -> list[str]:
     if not isinstance(value, list):
         return []
     return [str(item) for item in value if isinstance(item, str)]
@@ -92,9 +92,9 @@ def build_analysis_report(
         dataset_kind=str(product.get("dataset_kind", "generic_tabular")),
         selected_path_reason=str(product.get("selected_path_reason", "")),
         executive_summary=str(product.get("executive_summary", "")),
-        key_findings=_as_str_list(product.get("key_findings")),
-        recommendations=_as_str_list(product.get("recommendations")),
-        skipped_tools=_as_str_list(product.get("skipped_tools")),
+        key_findings=_filter_str_list(product.get("key_findings")),
+        recommendations=_filter_str_list(product.get("recommendations")),
+        skipped_tools=_filter_str_list(product.get("skipped_tools")),
         summary=AnalysisSummary(
             rows=table.row_count,
             columns=table.column_count,

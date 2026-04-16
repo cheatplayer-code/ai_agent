@@ -16,6 +16,21 @@ _BUILTIN_TOOL_IDS: tuple[str, ...] = (
     "date_coverage",
 )
 _MAX_OUTPUT_ITEMS = 5
+_SKIP_MESSAGES = {
+    "date_coverage_no_datetime": "date_coverage: skipped because no datetime columns were detected.",
+    "correlation_small": "correlation_scan: skipped because the dataset is too small.",
+    "correlation_no_pairs": (
+        "correlation_scan: skipped because fewer than two meaningful numeric non-ID columns were available."
+    ),
+    "outlier_small": "outlier_summary: skipped because the dataset is too small.",
+    "outlier_no_numeric": (
+        "outlier_summary: skipped because no meaningful numeric non-ID columns were available."
+    ),
+    "numeric_no_numeric": (
+        "numeric_summary: skipped because no meaningful numeric non-ID columns were available."
+    ),
+    "frequency_empty": "column_frequency: skipped for empty categorical columns.",
+}
 
 _SALES_KEYWORDS = ("sales", "revenue", "amount", "price", "quantity", "order", "product")
 _SURVEY_KEYWORDS = ("response", "answer", "option", "question", "rating", "satisfaction")
@@ -28,6 +43,15 @@ def _safe_int(value: Any) -> int:
 
 def _safe_bool(value: Any) -> bool:
     return bool(value) if isinstance(value, bool) else False
+
+
+def _available_categorical_column_count(profile: dict[str, Any]) -> int:
+    return max(
+        0,
+        _safe_int(profile.get("string_column_count"))
+        + _safe_int(profile.get("boolean_column_count"))
+        - _safe_int(profile.get("empty_column_count")),
+    )
 
 
 def _stringify_columns(profile: dict[str, Any], dq_suite: SuiteResult | None, evidence: list[dict[str, Any]]) -> list[str]:
@@ -333,7 +357,10 @@ def _recommendations(
     return recommendations[:_MAX_OUTPUT_ITEMS]
 
 
-def _skipped_tools(profile: dict[str, Any], selected_tool_ids: list[str] | None) -> list[str]:
+def _build_skipped_tools_messages(
+    profile: dict[str, Any],
+    selected_tool_ids: list[str] | None,
+) -> list[str]:
     if selected_tool_ids is None:
         return []
 
@@ -345,35 +372,30 @@ def _skipped_tools(profile: dict[str, Any], selected_tool_ids: list[str] | None)
         _safe_int(profile.get("numeric_column_count")) - _safe_int(profile.get("id_like_column_count")),
     )
     datetime_count = _safe_int(profile.get("datetime_column_count"))
-    categorical_available = max(
-        0,
-        _safe_int(profile.get("string_column_count")) + _safe_int(profile.get("boolean_column_count")) - _safe_int(profile.get("empty_column_count")),
-    )
+    categorical_available = _available_categorical_column_count(profile)
     tiny_dataset = _safe_bool(profile.get("tiny_dataset"))
 
     for tool_id in _BUILTIN_TOOL_IDS:
         if tool_id in selected:
             continue
         if tool_id == "date_coverage":
-            skipped.append("date_coverage: skipped because no datetime columns were detected.")
+            skipped.append(_SKIP_MESSAGES["date_coverage_no_datetime"])
         elif tool_id == "correlation_scan":
             if tiny_dataset:
-                skipped.append("correlation_scan: skipped because the dataset is too small.")
+                skipped.append(_SKIP_MESSAGES["correlation_small"])
             else:
-                skipped.append(
-                    "correlation_scan: skipped because fewer than two meaningful numeric non-ID columns were available."
-                )
+                skipped.append(_SKIP_MESSAGES["correlation_no_pairs"])
         elif tool_id == "outlier_summary":
             if tiny_dataset:
-                skipped.append("outlier_summary: skipped because the dataset is too small.")
+                skipped.append(_SKIP_MESSAGES["outlier_small"])
             else:
-                skipped.append("outlier_summary: skipped because no meaningful numeric non-ID columns were available.")
+                skipped.append(_SKIP_MESSAGES["outlier_no_numeric"])
         elif tool_id == "numeric_summary":
             if numeric_non_id_count < 1:
-                skipped.append("numeric_summary: skipped because no meaningful numeric non-ID columns were available.")
+                skipped.append(_SKIP_MESSAGES["numeric_no_numeric"])
         elif tool_id == "column_frequency":
             if categorical_available < 1:
-                skipped.append("column_frequency: skipped for empty categorical columns.")
+                skipped.append(_SKIP_MESSAGES["frequency_empty"])
 
     return skipped[:_MAX_OUTPUT_ITEMS]
 
@@ -410,5 +432,8 @@ def build_product_output(
             dq_suite=dq_suite,
             evidence=evidence,
         ),
-        "skipped_tools": _skipped_tools(profile=profile, selected_tool_ids=selected_tool_ids),
+        "skipped_tools": _build_skipped_tools_messages(
+            profile=profile,
+            selected_tool_ids=selected_tool_ids,
+        ),
     }
