@@ -13,9 +13,10 @@ from src.pipeline.orchestrator import run_pipeline
 def _parse_sheet(sheet: str | None) -> str | int | None:
     if sheet is None:
         return None
-    if sheet.isdigit():
+    try:
         return int(sheet)
-    return sheet
+    except ValueError:
+        return sheet
 
 
 def _build_parser() -> argparse.ArgumentParser:
