@@ -259,8 +259,116 @@ def test_ui_contract_confidence_medium_with_verified_claim_and_warning() -> None
         evidence=[],
     )
 
-    assert ui["confidence_level"] == "medium"
-    assert ui["confidence_reason"] == "Verified insights exist, but warning-level quality issues reduce confidence."
+    assert ui["confidence_level"] == "high"
+    assert (
+        ui["confidence_reason"]
+        == "A verified strong correlation was found and no critical quality issues were detected."
+    )
+
+
+def test_ui_contract_main_finding_uses_evidence_pair_when_verified_pair_details_missing() -> None:
+    claims = [
+        InsightClaim(
+            claim_id="c1",
+            claim_type="strong_correlation",
+            statement="The dataset contains at least one strong numeric correlation.",
+            evidence_refs=[],
+            confidence=None,
+        )
+    ]
+    verification = VerificationSuiteResult(
+        success=True,
+        results=[
+            VerificationResult(
+                claim_id="c1",
+                verified=True,
+                severity=Severity.INFO,
+                reason="ok",
+                evidence_refs=[],
+                details={"matched_pairs": []},
+            )
+        ],
+        meta={},
+    )
+    evidence = [
+        EvidenceItem(
+            evidence_id="ev-corr",
+            source="analysis_tools.correlation_scan",
+            metric_name="pearson_correlation",
+            value=0.99,
+            details={"col_a": "x_value", "col_b": "y_value"},
+        )
+    ]
+    ui = generate_ui_contract_fields(
+        source_path="/tmp/example/corr.csv",
+        dominant_mode="numeric",
+        issues=[],
+        verification=verification,
+        claims=claims,
+        key_findings=[],
+        executive_summary="Summary",
+        evidence=evidence,
+    )
+
+    assert ui["main_finding"] == "A strong correlation was detected between x_value and y_value."
+
+
+def test_ui_contract_temporal_main_finding_prefers_verified_date_column_range() -> None:
+    claims = [
+        InsightClaim(
+            claim_id="c-date",
+            claim_type="date_range_present",
+            statement="Date range claim.",
+            evidence_refs=[],
+            confidence=None,
+        )
+    ]
+    verification = VerificationSuiteResult(
+        success=True,
+        results=[
+            VerificationResult(
+                claim_id="c-date",
+                verified=True,
+                severity=Severity.INFO,
+                reason="ok",
+                evidence_refs=[],
+                details={"matched_columns": ["event_date"]},
+            )
+        ],
+        meta={},
+    )
+    evidence = [
+        EvidenceItem(
+            evidence_id="ev-date-1",
+            source="analysis_tools.date_coverage",
+            metric_name="date_coverage",
+            value={"min_date": None, "max_date": None},
+            details={"column_name": "other_date"},
+        ),
+        EvidenceItem(
+            evidence_id="ev-date-2",
+            source="analysis_tools.date_coverage",
+            metric_name="date_coverage",
+            value={"min_date": "2026-04-01", "max_date": "2026-04-30"},
+            details={"column_name": "event_date"},
+        ),
+    ]
+
+    ui = generate_ui_contract_fields(
+        source_path="/tmp/example/dates.csv",
+        dominant_mode="temporal",
+        issues=[],
+        verification=verification,
+        claims=claims,
+        key_findings=[],
+        executive_summary="Temporal summary",
+        evidence=evidence,
+    )
+
+    assert (
+        ui["main_finding"]
+        == "Valid date coverage was detected from 2026-04-01 to 2026-04-30."
+    )
 
 
 def test_ui_contract_is_deterministic_for_identical_inputs() -> None:

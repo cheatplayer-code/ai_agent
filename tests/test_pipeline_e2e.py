@@ -175,6 +175,8 @@ def test_pipeline_model_dump_contains_required_ui_runtime_fields() -> None:
         "export_state",
     ]:
         assert key in payload
+    assert payload["main_finding"] == "A strong correlation was detected between x_value and y_value."
+    assert payload["confidence_level"] == "high"
 
 
 def test_pipeline_output_is_json_serializable() -> None:
