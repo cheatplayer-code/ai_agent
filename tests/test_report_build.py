@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pandas as pd
 
 from src.core.enums import IssueCategory, Severity
@@ -144,8 +146,8 @@ def _verification() -> VerificationSuiteResult:
     )
 
 
-def test_evidence_dicts_become_evidence_items() -> None:
-    report = build_analysis_report(
+def _report() -> AnalysisReport:
+    return build_analysis_report(
         table=_table(),
         policy=ExecutionPolicy(),
         schema=_schema(),
@@ -157,25 +159,15 @@ def test_evidence_dicts_become_evidence_items() -> None:
                 "metric_name": "numeric_summary",
                 "value": {"mean": 1.0},
                 "details": {"column_name": "a"},
-            }
+            },
+            {
+                "evidence_id": "ev-2",
+                "source": "analysis_tools.column_frequency",
+                "metric_name": "top_value_counts",
+                "value": {"top": "x"},
+                "details": ["not", "a", "dict"],
+            },
         ],
-        claims=[],
-        verification=_verification(),
-        plan=None,
-    )
-
-    assert isinstance(report.evidence[0], EvidenceItem)
-    assert report.evidence[0].evidence_id == "ev-1"
-    assert report.evidence[0].details == {"column_name": "a"}
-
-
-def test_summary_counts_are_correct() -> None:
-    report = build_analysis_report(
-        table=_table(),
-        policy=ExecutionPolicy(),
-        schema=_schema(),
-        dq_suite=_dq_suite(),
-        evidence=[],
         claims=[
             InsightClaim(
                 claim_id="c1",
@@ -196,6 +188,25 @@ def test_summary_counts_are_correct() -> None:
         plan=None,
     )
 
+
+def test_evidence_dicts_become_evidence_items() -> None:
+    report = _report()
+
+    assert isinstance(report.evidence[0], EvidenceItem)
+    assert report.evidence[0].evidence_id == "ev-1"
+    assert report.evidence[0].details == {"column_name": "a"}
+    assert report.evidence[1].details == {}
+
+
+def test_dq_issues_are_flattened_into_report_issues_in_stable_order() -> None:
+    report = _report()
+
+    assert [issue.issue_id for issue in report.issues] == ["dq:warning", "dq:error"]
+
+
+def test_summary_counts_are_correct() -> None:
+    report = _report()
+
     assert report.summary.rows == 2
     assert report.summary.columns == 2
     assert report.summary.error_count == 1
@@ -203,32 +214,18 @@ def test_summary_counts_are_correct() -> None:
     assert report.summary.verified_claim_count == 1
 
 
-def test_dq_issues_are_flattened_into_report_issues_in_stable_order() -> None:
-    report = build_analysis_report(
-        table=_table(),
-        policy=ExecutionPolicy(),
-        schema=_schema(),
-        dq_suite=_dq_suite(),
-        evidence=[],
-        claims=[],
-        verification=_verification(),
-        plan=None,
-    )
+def test_report_is_json_serializable_and_generated_at_is_deterministic_none() -> None:
+    report = _report()
 
-    assert [issue.issue_id for issue in report.issues] == ["dq:warning", "dq:error"]
+    raw_json = report.model_dump_json(indent=2)
+    payload = json.loads(raw_json)
+
+    assert payload["generated_at"] is None
+    assert payload["summary"]["warning_count"] == 1
 
 
 def test_report_matches_frozen_analysis_report_schema() -> None:
-    report = build_analysis_report(
-        table=_table(),
-        policy=ExecutionPolicy(),
-        schema=_schema(),
-        dq_suite=_dq_suite(),
-        evidence=[],
-        claims=[],
-        verification=_verification(),
-        plan=None,
-    )
+    report = _report()
 
     reparsed = AnalysisReport(**report.model_dump())
     assert reparsed.generated_at is None
