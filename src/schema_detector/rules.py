@@ -11,7 +11,7 @@ import pandas as pd
 
 _TRUE_TOKENS = {"true", "yes", "y", "1"}
 _FALSE_TOKENS = {"false", "no", "n", "0"}
-ALL_NULL_CONFIDENCE = 0.1
+_ALL_NULL_CONFIDENCE = 0.1
 _DATETIME_FORMATS = (
     "%Y-%m-%d",
     "%Y/%m/%d",
@@ -149,7 +149,7 @@ def infer_column_type(series: pd.Series) -> tuple[str, float]:
     """Infer one of: integer, float, boolean, datetime, string."""
     non_null = _non_null_series(series)
     if non_null.empty:
-        return "string", ALL_NULL_CONFIDENCE
+        return "string", _ALL_NULL_CONFIDENCE
 
     is_bool, bool_conf = infer_boolean_series(series)
     if is_bool:

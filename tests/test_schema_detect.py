@@ -46,7 +46,7 @@ def test_detect_schema_nullable_and_non_null_count_are_correct() -> None:
     detected = detect_schema(table=_table(df), policy=ExecutionPolicy(head=4, tail=0, sample=0))
     column = detected.columns[0]
 
-    assert column.nullable is True
+    assert column.nullable
     assert column.non_null_count == 2
 
 
