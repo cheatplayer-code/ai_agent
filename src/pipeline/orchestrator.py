@@ -10,6 +10,7 @@ from src.data_quality_checker.runner import run_dq_suite
 from src.file_loader.loader import load_table
 from src.planner.generator import generate_plan
 from src.planner.validator import validate_plan
+from src.product_output.generator import build_product_output
 from src.report_builder.build import build_analysis_report
 from src.report_builder.schema import AnalysisReport, InsightClaim
 from src.schema_detector.detect import detect_schema
@@ -57,6 +58,14 @@ def run_pipeline(
         claim_list = claims
 
     verification = verify_claims(claims=claim_list, evidence=evidence, dq_suite=dq_suite)
+    product_output = build_product_output(
+        profile={**profile, "normalized_columns": table.normalized_columns},
+        dq_suite=dq_suite,
+        evidence=evidence,
+        claims=claim_list,
+        verification=verification,
+        selected_tool_ids=selected_tool_ids,
+    )
 
     return build_analysis_report(
         table=table,
@@ -67,4 +76,5 @@ def run_pipeline(
         claims=claim_list,
         verification=verification,
         plan=plan,
+        product_output=product_output,
     )

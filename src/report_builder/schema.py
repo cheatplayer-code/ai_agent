@@ -164,6 +164,12 @@ class AnalysisReport(_StrictBase):
     claims: list[InsightClaim] = Field(default_factory=list)
     verification: VerificationSuiteResult | None
     plan: Plan | None
+    dataset_kind: str = "generic_tabular"
+    selected_path_reason: str = ""
+    executive_summary: str = ""
+    key_findings: list[str] = Field(default_factory=list)
+    recommendations: list[str] = Field(default_factory=list)
+    skipped_tools: list[str] = Field(default_factory=list)
     summary: AnalysisSummary
     issues: list[Issue] = Field(default_factory=list)
     meta: dict[str, Any] = Field(default_factory=dict)

@@ -186,6 +186,14 @@ def _report() -> AnalysisReport:
         ],
         verification=_verification(),
         plan=None,
+        product_output={
+            "dataset_kind": "generic_numeric",
+            "selected_path_reason": "Selected numeric analysis path because multiple meaningful numeric columns were available.",
+            "executive_summary": "The dataset is primarily numeric and has generally good data quality. A strong verified relationship was detected between a and b.",
+            "key_findings": ["Strong correlation detected between a and b."],
+            "recommendations": ["Investigate the strong numeric relationship between a and b."],
+            "skipped_tools": ["date_coverage: skipped because no datetime columns were detected."],
+        },
     )
 
 
@@ -232,3 +240,13 @@ def test_report_matches_frozen_analysis_report_schema() -> None:
     assert reparsed.generated_at is None
     assert reparsed.input_table.row_count == 2
     assert reparsed.summary.warning_count == 1
+
+
+def test_report_contains_product_facing_output_fields() -> None:
+    report = _report()
+    assert report.dataset_kind == "generic_numeric"
+    assert report.selected_path_reason
+    assert report.executive_summary
+    assert report.key_findings == ["Strong correlation detected between a and b."]
+    assert report.recommendations == ["Investigate the strong numeric relationship between a and b."]
+    assert report.skipped_tools == ["date_coverage: skipped because no datetime columns were detected."]

@@ -103,6 +103,12 @@ def _minimal_report(**overrides: object) -> dict:
                 {"step_id": "s2", "step_type": "placeholder", "depends_on": ["s1"]},
             ],
         },
+        "dataset_kind": "generic_tabular",
+        "selected_path_reason": "Selected mixed analysis path because the dataset has no single dominant signal.",
+        "executive_summary": "The dataset is mixed tabular and has generally good data quality. No strong verified insight was detected.",
+        "key_findings": [],
+        "recommendations": [],
+        "skipped_tools": [],
         "summary": {
             "rows": 10,
             "columns": 2,
@@ -170,6 +176,7 @@ def test_analysis_report_json_serializable() -> None:
     data = json.loads(report.model_dump_json())
     assert "report_version" in data
     assert data["input_table"]["source_path"] == "data/test.csv"
+    assert data["dataset_kind"] == "generic_tabular"
 
 
 def test_analysis_report_policy_typed_as_execution_policy() -> None:
