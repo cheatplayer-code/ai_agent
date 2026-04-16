@@ -1,0 +1,489 @@
+{
+  "report_version": "0.1.0",
+  "generated_at": null,
+  "policy": {
+    "head": 5,
+    "tail": 5,
+    "sample": 20,
+    "max_rows": 10000,
+    "max_cols": 500,
+    "max_cells": 500000,
+    "max_categories_preview": 10,
+    "summary_top_k": 5,
+    "random_state": 42,
+    "lazy": true,
+    "rounding_digits": 4
+  },
+  "input_table": {
+    "source_path": "tests/fixtures/clean.csv",
+    "file_type": "csv",
+    "sheet_name": null,
+    "row_count": 8,
+    "column_count": 7,
+    "normalized_columns": [
+      "order_id",
+      "product",
+      "region",
+      "quantity",
+      "unit_price",
+      "order_date",
+      "returned"
+    ]
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "order_id",
+        "detected_type": "string",
+        "nullable": false,
+        "unique_count": 8,
+        "unique_ratio": 1.0,
+        "non_null_count": 8,
+        "confidence": 1.0
+      },
+      {
+        "name": "product",
+        "detected_type": "string",
+        "nullable": false,
+        "unique_count": 4,
+        "unique_ratio": 0.5,
+        "non_null_count": 8,
+        "confidence": 1.0
+      },
+      {
+        "name": "region",
+        "detected_type": "string",
+        "nullable": false,
+        "unique_count": 4,
+        "unique_ratio": 0.5,
+        "non_null_count": 8,
+        "confidence": 1.0
+      },
+      {
+        "name": "quantity",
+        "detected_type": "integer",
+        "nullable": false,
+        "unique_count": 8,
+        "unique_ratio": 1.0,
+        "non_null_count": 8,
+        "confidence": 1.0
+      },
+      {
+        "name": "unit_price",
+        "detected_type": "float",
+        "nullable": false,
+        "unique_count": 4,
+        "unique_ratio": 0.5,
+        "non_null_count": 8,
+        "confidence": 1.0
+      },
+      {
+        "name": "order_date",
+        "detected_type": "datetime",
+        "nullable": false,
+        "unique_count": 8,
+        "unique_ratio": 1.0,
+        "non_null_count": 8,
+        "confidence": 1.0
+      },
+      {
+        "name": "returned",
+        "detected_type": "boolean",
+        "nullable": false,
+        "unique_count": 2,
+        "unique_ratio": 0.25,
+        "non_null_count": 8,
+        "confidence": 1.0
+      }
+    ],
+    "sampled_rows": 8,
+    "notes": []
+  },
+  "dq_suite": {
+    "suite_id": "dq_suite_v1",
+    "success": true,
+    "statistics": {
+      "evaluated_count": 6,
+      "success_count": 6,
+      "failure_count": 0,
+      "error_count": 0,
+      "warning_count": 0,
+      "info_count": 0
+    },
+    "results": [
+      {
+        "check_id": "missing_values",
+        "check_name": "Missing Values",
+        "severity": "error",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "affected_column_count": 0,
+          "total_missing_cells": 0
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "duplicate_rows",
+        "check_name": "Duplicate Rows",
+        "severity": "warning",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "duplicate_row_count": 0
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "duplicate_columns",
+        "check_name": "Duplicate Columns",
+        "severity": "warning",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "duplicate_column_count": 0
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "high_cardinality",
+        "check_name": "High Cardinality",
+        "severity": "warning",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "affected_column_count": 0
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "constant_column",
+        "check_name": "Constant Column",
+        "severity": "warning",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "affected_column_count": 0
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "empty_column",
+        "check_name": "Empty Column",
+        "severity": "warning",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "affected_column_count": 0
+        },
+        "exception_info": null
+      }
+    ],
+    "meta": {
+      "lazy": true
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "column_frequency:order_id",
+      "source": "analysis_tools.column_frequency",
+      "metric_name": "top_value_counts",
+      "value": [
+        {
+          "value": "A1001",
+          "count": 1,
+          "ratio": 0.125
+        },
+        {
+          "value": "A1002",
+          "count": 1,
+          "ratio": 0.125
+        },
+        {
+          "value": "A1003",
+          "count": 1,
+          "ratio": 0.125
+        },
+        {
+          "value": "A1004",
+          "count": 1,
+          "ratio": 0.125
+        },
+        {
+          "value": "A1005",
+          "count": 1,
+          "ratio": 0.125
+        }
+      ],
+      "details": {
+        "column_name": "order_id",
+        "top_k": 5,
+        "non_null_count": 8
+      }
+    },
+    {
+      "evidence_id": "column_frequency:product",
+      "source": "analysis_tools.column_frequency",
+      "metric_name": "top_value_counts",
+      "value": [
+        {
+          "value": "Folder",
+          "count": 2,
+          "ratio": 0.25
+        },
+        {
+          "value": "Marker",
+          "count": 2,
+          "ratio": 0.25
+        },
+        {
+          "value": "Notebook",
+          "count": 2,
+          "ratio": 0.25
+        },
+        {
+          "value": "Pen",
+          "count": 2,
+          "ratio": 0.25
+        }
+      ],
+      "details": {
+        "column_name": "product",
+        "top_k": 5,
+        "non_null_count": 8
+      }
+    },
+    {
+      "evidence_id": "column_frequency:region",
+      "source": "analysis_tools.column_frequency",
+      "metric_name": "top_value_counts",
+      "value": [
+        {
+          "value": "East",
+          "count": 2,
+          "ratio": 0.25
+        },
+        {
+          "value": "North",
+          "count": 2,
+          "ratio": 0.25
+        },
+        {
+          "value": "South",
+          "count": 2,
+          "ratio": 0.25
+        },
+        {
+          "value": "West",
+          "count": 2,
+          "ratio": 0.25
+        }
+      ],
+      "details": {
+        "column_name": "region",
+        "top_k": 5,
+        "non_null_count": 8
+      }
+    },
+    {
+      "evidence_id": "column_frequency:returned",
+      "source": "analysis_tools.column_frequency",
+      "metric_name": "top_value_counts",
+      "value": [
+        {
+          "value": "no",
+          "count": 6,
+          "ratio": 0.75
+        },
+        {
+          "value": "yes",
+          "count": 2,
+          "ratio": 0.25
+        }
+      ],
+      "details": {
+        "column_name": "returned",
+        "top_k": 5,
+        "non_null_count": 8
+      }
+    },
+    {
+      "evidence_id": "numeric_summary:quantity",
+      "source": "analysis_tools.numeric_summary",
+      "metric_name": "numeric_summary",
+      "value": {
+        "count": 8,
+        "min": 11.0,
+        "max": 40.0,
+        "mean": 21.5,
+        "median": 18.5
+      },
+      "details": {
+        "column_name": "quantity"
+      }
+    },
+    {
+      "evidence_id": "numeric_summary:unit_price",
+      "source": "analysis_tools.numeric_summary",
+      "metric_name": "numeric_summary",
+      "value": {
+        "count": 8,
+        "min": 1.2,
+        "max": 4.0,
+        "mean": 2.7,
+        "median": 2.8
+      },
+      "details": {
+        "column_name": "unit_price"
+      }
+    },
+    {
+      "evidence_id": "outlier_summary:quantity",
+      "source": "analysis_tools.outlier_summary",
+      "metric_name": "iqr_outlier_summary",
+      "value": {
+        "count": 8,
+        "q1": 14.25,
+        "q3": 25.25,
+        "iqr": 11.0,
+        "lower_bound": -2.25,
+        "upper_bound": 41.75,
+        "outlier_count": 0,
+        "outlier_ratio": 0.0
+      },
+      "details": {
+        "column_name": "quantity",
+        "method": "iqr"
+      }
+    },
+    {
+      "evidence_id": "outlier_summary:unit_price",
+      "source": "analysis_tools.outlier_summary",
+      "metric_name": "iqr_outlier_summary",
+      "value": {
+        "count": 8,
+        "q1": 2.175,
+        "q3": 3.325,
+        "iqr": 1.15,
+        "lower_bound": 0.45,
+        "upper_bound": 5.05,
+        "outlier_count": 0,
+        "outlier_ratio": 0.0
+      },
+      "details": {
+        "column_name": "unit_price",
+        "method": "iqr"
+      }
+    },
+    {
+      "evidence_id": "correlation_scan:quantity:unit_price",
+      "source": "analysis_tools.correlation_scan",
+      "metric_name": "pearson_correlation",
+      "value": -0.6793,
+      "details": {
+        "col_a": "quantity",
+        "col_b": "unit_price",
+        "pair_count": 8
+      }
+    },
+    {
+      "evidence_id": "date_coverage:order_date",
+      "source": "analysis_tools.date_coverage",
+      "metric_name": "date_coverage",
+      "value": {
+        "non_null_count": 8,
+        "min_date": "2026-01-05T00:00:00",
+        "max_date": "2026-01-12T00:00:00"
+      },
+      "details": {
+        "column_name": "order_date"
+      }
+    }
+  ],
+  "claims": [],
+  "verification": {
+    "success": true,
+    "results": [],
+    "meta": {
+      "claim_count": 0,
+      "verified_count": 0,
+      "unverified_count": 0
+    }
+  },
+  "plan": {
+    "plan_id": "deterministic_plan_v1",
+    "steps": [
+      {
+        "step_id": "step_1_load_table",
+        "step_type": "load_table",
+        "inputs": [],
+        "params": {
+          "source_path": "tests/fixtures/clean.csv",
+          "sheet_name": null
+        },
+        "depends_on": []
+      },
+      {
+        "step_id": "step_2_detect_schema",
+        "step_type": "detect_schema",
+        "inputs": [],
+        "params": {},
+        "depends_on": [
+          "step_1_load_table"
+        ]
+      },
+      {
+        "step_id": "step_3_run_dq_suite",
+        "step_type": "run_dq_suite",
+        "inputs": [],
+        "params": {},
+        "depends_on": [
+          "step_2_detect_schema"
+        ]
+      },
+      {
+        "step_id": "step_4_run_analysis_tools",
+        "step_type": "run_analysis_tools",
+        "inputs": [],
+        "params": {},
+        "depends_on": [
+          "step_3_run_dq_suite"
+        ]
+      },
+      {
+        "step_id": "step_5_verify_claims",
+        "step_type": "verify_claims",
+        "inputs": [],
+        "params": {
+          "claims_provided": false
+        },
+        "depends_on": [
+          "step_4_run_analysis_tools"
+        ]
+      },
+      {
+        "step_id": "step_6_build_report",
+        "step_type": "build_report",
+        "inputs": [],
+        "params": {},
+        "depends_on": [
+          "step_5_verify_claims"
+        ]
+      }
+    ],
+    "meta": {}
+  },
+  "summary": {
+    "rows": 8,
+    "columns": 7,
+    "error_count": 0,
+    "warning_count": 0,
+    "verified_claim_count": 0
+  },
+  "issues": [],
+  "meta": {
+    "evidence_count": 10,
+    "claim_count": 0,
+    "issue_count": 0
+  }
+}
