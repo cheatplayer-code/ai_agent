@@ -212,7 +212,12 @@ def _confidence_fields(
     if error_count > 0 or dq_first_mode or (verified_claim_count == 0 and quality_weak):
         return "low", "Confidence is limited because multiple data quality issues were detected."
 
-    if has_verification and strong_corr is not None and error_count == 0:
+    if (
+        has_verification
+        and strong_corr is not None
+        and verified_claim_count == 1
+        and error_count == 0
+    ):
         return "high", "A verified strong correlation was found and no critical quality issues were detected."
 
     if (
