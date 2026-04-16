@@ -15,6 +15,7 @@ _BUILTIN_TOOL_IDS: tuple[str, ...] = (
     "correlation_scan",
     "date_coverage",
 )
+_MAX_OUTPUT_ITEMS = 5
 
 _SALES_KEYWORDS = ("sales", "revenue", "amount", "price", "quantity", "order", "product")
 _SURVEY_KEYWORDS = ("response", "answer", "option", "question", "rating", "satisfaction")
@@ -258,7 +259,7 @@ def _key_findings(
         if text is not None and text not in seen:
             findings.append(text)
             seen.add(text)
-        if len(findings) >= 5:
+        if len(findings) >= _MAX_OUTPUT_ITEMS:
             return findings
 
     dq_messages = [
@@ -274,17 +275,17 @@ def _key_findings(
         if code in dq_flags and text not in seen:
             findings.append(text)
             seen.add(text)
-        if len(findings) >= 5:
+        if len(findings) >= _MAX_OUTPUT_ITEMS:
             return findings
 
-    if len(findings) < 5:
+    if len(findings) < _MAX_OUTPUT_ITEMS:
         date_range = _first_date_coverage_range(evidence)
         if date_range is not None:
             text = f"Date coverage detected from {date_range[0]} to {date_range[1]}."
             if text not in seen:
                 findings.append(text)
 
-    return findings[:5]
+    return findings[:_MAX_OUTPUT_ITEMS]
 
 
 def _recommendations(
@@ -299,7 +300,7 @@ def _recommendations(
     dq_flags = _major_dq_flags(dq_suite)
 
     def _add(text: str) -> None:
-        if text not in seen and len(recommendations) < 5:
+        if text not in seen and len(recommendations) < _MAX_OUTPUT_ITEMS:
             recommendations.append(text)
             seen.add(text)
 
@@ -329,7 +330,7 @@ def _recommendations(
     if date_range is not None and any(claim.claim_type == "date_range_present" for claim in verified_claims):
         _add("Use the detected date range for temporal trend analysis.")
 
-    return recommendations[:5]
+    return recommendations[:_MAX_OUTPUT_ITEMS]
 
 
 def _skipped_tools(profile: dict[str, Any], selected_tool_ids: list[str] | None) -> list[str]:
@@ -374,7 +375,7 @@ def _skipped_tools(profile: dict[str, Any], selected_tool_ids: list[str] | None)
             if categorical_available < 1:
                 skipped.append("column_frequency: skipped for empty categorical columns.")
 
-    return skipped[:5]
+    return skipped[:_MAX_OUTPUT_ITEMS]
 
 
 def build_product_output(
