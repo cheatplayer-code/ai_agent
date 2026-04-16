@@ -64,7 +64,7 @@ def test_pipeline_output_structure_and_summary_consistency() -> None:
         claims=None,
     )
 
-    assert report.schema is not None
+    assert report.detected_schema is not None
     assert report.dq_suite is not None
     assert report.verification is not None
     assert all(isinstance(item, EvidenceItem) for item in report.evidence)

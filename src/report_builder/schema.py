@@ -152,11 +152,13 @@ class AnalysisSummary(_StrictBase):
 
 
 class AnalysisReport(_StrictBase):
+    model_config = ConfigDict(extra="forbid", serialize_by_alias=True)
+
     report_version: str = REPORT_VERSION
     generated_at: str | None
     policy: ExecutionPolicy
     input_table: InputTableInfo
-    schema: DetectedSchema | None
+    detected_schema: DetectedSchema | None = Field(alias="schema")
     dq_suite: SuiteResult | None
     evidence: list[EvidenceItem] = Field(default_factory=list)
     claims: list[InsightClaim] = Field(default_factory=list)
