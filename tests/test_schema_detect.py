@@ -73,7 +73,7 @@ def test_detect_schema_adds_low_confidence_note_when_expected() -> None:
     df = pd.DataFrame({"mixed": ["1", "x"]})
     detected = detect_schema(table=_table(df), policy=ExecutionPolicy(head=2, tail=0, sample=0))
 
-    assert any(note == "low confidence type inference for column mixed" for note in detected.notes)
+    assert "low confidence type inference for column mixed" in detected.notes
 
 
 def test_detect_schema_result_validates_against_detected_schema_contract() -> None:

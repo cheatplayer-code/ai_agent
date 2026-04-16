@@ -45,7 +45,7 @@ def detect_schema(table: TableArtifact, policy: ExecutionPolicy) -> DetectedSche
 
         if non_null_count == 0:
             notes.append(f"column {column_name} had only null values")
-        if confidence < 0.6:
+        elif confidence < 0.6:
             notes.append(f"low confidence type inference for column {column_name}")
 
     return DetectedSchema(columns=columns, sampled_rows=len(sampled_df), notes=notes)
