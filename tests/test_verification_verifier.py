@@ -68,6 +68,57 @@ def _dq_suite_with_high_cardinality_issue() -> SuiteResult:
     )
 
 
+def _dq_suite_with_missing_values_issue(
+    *,
+    missing_ratio: float | None = None,
+    missing_count: int = 30,
+) -> SuiteResult:
+    issue_details = {"missing_count": missing_count}
+    if missing_ratio is not None:
+        issue_details["missing_ratio"] = missing_ratio
+
+    return SuiteResult(
+        suite_id="dq_suite_v1",
+        success=False,
+        statistics=SuiteStatistics(
+            evaluated_count=1,
+            success_count=0,
+            failure_count=1,
+            error_count=1,
+            warning_count=0,
+            info_count=0,
+        ),
+        results=[
+            CheckResult(
+                check_id="missing_values",
+                check_name="Missing Values",
+                severity=Severity.ERROR,
+                success=False,
+                issues=[
+                    Issue(
+                        issue_id="missing_values:email",
+                        category=IssueCategory.DQ,
+                        severity=Severity.ERROR,
+                        code="MISSING_VALUES",
+                        message="Column 'email' contains missing values.",
+                        location=Location(
+                            row_number=None,
+                            column_name="email",
+                            column_index=None,
+                            sheet_name=None,
+                        ),
+                        details=issue_details,
+                        exception_info=None,
+                    )
+                ],
+                metrics={"total_missing_cells": missing_count, "affected_column_count": 1},
+                exception_info=None,
+            )
+        ],
+        meta={},
+    )
+
+
 def test_missing_evidence_returns_unverified_warning() -> None:
     suite = verify_claims(
         claims=[_claim("c1", "high_missingness")],
@@ -78,6 +129,32 @@ def test_missing_evidence_returns_unverified_warning() -> None:
     assert not result.verified
     assert result.severity == Severity.WARNING
     assert "Missing required evidence" in result.reason
+
+
+def test_high_missingness_can_verify_from_dq_suite_ratio() -> None:
+    suite = verify_claims(
+        claims=[_claim("c1", "high_missingness")],
+        evidence=[],
+        dq_suite=_dq_suite_with_missing_values_issue(missing_ratio=0.25, missing_count=25),
+    )
+    result = suite.results[0]
+    assert result.verified
+    assert result.severity == Severity.INFO
+    assert result.evidence_refs == ["missing_values:email"]
+    assert result.details["observed_missing_ratio"] == 0.25
+
+
+def test_high_missingness_from_dq_suite_without_ratio_is_unverified() -> None:
+    suite = verify_claims(
+        claims=[_claim("c1", "high_missingness")],
+        evidence=[],
+        dq_suite=_dq_suite_with_missing_values_issue(missing_ratio=None, missing_count=25),
+    )
+    result = suite.results[0]
+    assert not result.verified
+    assert result.severity == Severity.WARNING
+    assert result.reason == "Missingness ratio unavailable in dq_suite missing_values results."
+    assert result.evidence_refs == ["missing_values:email"]
 
 
 def test_outliers_present_verified_correctly() -> None:

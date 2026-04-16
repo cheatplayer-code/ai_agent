@@ -31,7 +31,7 @@ class ClaimSpec:
 CLAIM_SPECS: tuple[ClaimSpec, ...] = (
     ClaimSpec(
         claim_type=CLAIM_TYPE_HIGH_MISSINGNESS,
-        description="Supported by missing-values evidence with ratio at or above threshold.",
+        description="Supported by dq_suite missing-values results (or missing-values evidence) with ratio at or above threshold.",
     ),
     ClaimSpec(
         claim_type=CLAIM_TYPE_OUTLIERS_PRESENT,
