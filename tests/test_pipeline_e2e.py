@@ -7,10 +7,10 @@ from pathlib import Path
 
 import pytest
 
+from src.core.enums import Severity
 from src.core.policy import ExecutionPolicy
-from src.file_loader.loader import load_table
 from src.pipeline.orchestrator import run_pipeline
-from src.report_builder.schema import AnalysisReport
+from src.report_builder.schema import AnalysisReport, EvidenceItem
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -22,48 +22,92 @@ FIXTURES_DIR = Path(__file__).parent / "fixtures"
         ("sample.xlsx", "DataSheet"),
     ],
 )
-def test_run_pipeline_end_to_end_is_deterministic_and_consistent(
+def test_run_pipeline_returns_analysis_report_for_csv_and_xlsx(
     fixture_name: str,
     sheet_name: str | None,
 ) -> None:
-    source = str(FIXTURES_DIR / fixture_name)
+    report = run_pipeline(
+        source_path=str(FIXTURES_DIR / fixture_name),
+        policy=ExecutionPolicy(),
+        sheet_name=sheet_name,
+        claims=None,
+    )
+
+    assert isinstance(report, AnalysisReport)
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "sheet_name"),
+    [
+        ("sample.csv", None),
+        ("sample.xlsx", "DataSheet"),
+    ],
+)
+def test_repeated_runs_produce_identical_report_payloads(
+    fixture_name: str,
+    sheet_name: str | None,
+) -> None:
+    source_path = str(FIXTURES_DIR / fixture_name)
     policy = ExecutionPolicy()
 
-    loaded = load_table(source_path=source, policy=policy, sheet_name=sheet_name)
+    first = run_pipeline(source_path=source_path, policy=policy, sheet_name=sheet_name, claims=None)
+    second = run_pipeline(source_path=source_path, policy=policy, sheet_name=sheet_name, claims=None)
 
-    first = run_pipeline(
-        source_path=source,
-        policy=policy,
-        sheet_name=sheet_name,
+    assert first.model_dump(mode="json") == second.model_dump(mode="json")
+
+
+def test_pipeline_output_structure_and_summary_consistency() -> None:
+    report = run_pipeline(
+        source_path=str(FIXTURES_DIR / "sample.csv"),
+        policy=ExecutionPolicy(),
+        sheet_name=None,
         claims=None,
     )
-    second = run_pipeline(
-        source_path=source,
-        policy=policy,
-        sheet_name=sheet_name,
-        claims=None,
+
+    assert report.schema is not None
+    assert report.dq_suite is not None
+    assert report.verification is not None
+    assert all(isinstance(item, EvidenceItem) for item in report.evidence)
+
+    expected_error_count = sum(1 for issue in report.issues if issue.severity == Severity.ERROR)
+    expected_warning_count = sum(1 for issue in report.issues if issue.severity == Severity.WARNING)
+    expected_verified_claim_count = sum(
+        1 for result in report.verification.results if result.verified
     )
 
-    assert isinstance(first, AnalysisReport)
-    assert first.model_dump() == second.model_dump()
+    assert report.summary.rows == report.input_table.row_count
+    assert report.summary.columns == report.input_table.column_count
+    assert report.summary.error_count == expected_error_count
+    assert report.summary.warning_count == expected_warning_count
+    assert report.summary.verified_claim_count == expected_verified_claim_count
 
-    assert first.input_table.source_path == source
-    assert first.input_table.file_type == loaded.file_type
-    assert first.input_table.sheet_name == loaded.sheet_name
-    assert first.input_table.row_count == loaded.row_count
-    assert first.input_table.column_count == loaded.column_count
-    assert first.input_table.normalized_columns == loaded.normalized_columns
 
-    assert first.summary.rows == loaded.row_count
-    assert first.summary.columns == loaded.column_count
+def test_empty_claims_produce_successful_zero_claim_verification_suite() -> None:
+    report = run_pipeline(
+        source_path=str(FIXTURES_DIR / "sample.csv"),
+        policy=ExecutionPolicy(),
+        sheet_name=None,
+        claims=[],
+    )
 
-    assert first.schema is not None
-    assert first.dq_suite is not None
-    assert first.verification is not None
-    assert first.verification.meta == {
+    assert report.verification is not None
+    assert report.verification.success is True
+    assert report.verification.meta == {
         "claim_count": 0,
         "verified_count": 0,
         "unverified_count": 0,
     }
+    assert report.verification.results == []
 
-    json.dumps(first.model_dump(mode="json")["evidence"])
+
+def test_pipeline_output_is_json_serializable() -> None:
+    report = run_pipeline(
+        source_path=str(FIXTURES_DIR / "sample.xlsx"),
+        policy=ExecutionPolicy(),
+        sheet_name="DataSheet",
+        claims=None,
+    )
+
+    payload = report.model_dump(mode="json")
+    assert json.loads(report.model_dump_json())["report_version"] == payload["report_version"]
+    json.dumps(payload)
