@@ -1,0 +1,19 @@
+{
+  "suite_name": "basic_quality_suite",
+  "success": false,
+  "total_checks": 3,
+  "passed_checks": 2,
+  "failed_checks": 1,
+  "run_time_seconds": 0.12,
+  "issues": [
+    {
+      "id": "issue-001",
+      "category": "dq",
+      "severity": "warning",
+      "column": "email",
+      "row_index": 42,
+      "message": "Missing value in column 'email'.",
+      "details": {}
+    }
+  ]
+}
