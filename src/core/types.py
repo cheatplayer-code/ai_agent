@@ -19,13 +19,14 @@ class TableArtifact:
 
     df: pd.DataFrame
     source_path: str
+    file_type: str
     sheet_name: str | None = None
+    original_columns: list[str] = field(default_factory=list)
+    normalized_columns: list[str] = field(default_factory=list)
 
     row_count: int = field(init=False)
     column_count: int = field(init=False)
-    column_names: list[str] = field(init=False)
 
     def __post_init__(self) -> None:
         self.row_count = len(self.df)
         self.column_count = len(self.df.columns)
-        self.column_names = list(self.df.columns)
