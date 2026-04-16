@@ -248,18 +248,48 @@
       }
     }
   ],
-  "claims": [],
+  "claims": [
+    {
+      "claim_id": "auto_claim_1_strong_correlation",
+      "claim_type": "strong_correlation",
+      "statement": "The dataset contains at least one strong numeric correlation.",
+      "evidence_refs": [
+        "correlation_scan:x_value:y_value"
+      ],
+      "confidence": null
+    }
+  ],
   "verification": {
     "success": true,
-    "results": [],
+    "results": [
+      {
+        "claim_id": "auto_claim_1_strong_correlation",
+        "verified": true,
+        "severity": "info",
+        "reason": "Correlation threshold met.",
+        "evidence_refs": [
+          "correlation_scan:x_value:y_value"
+        ],
+        "details": {
+          "threshold": 0.8,
+          "observed_abs_correlation": 1.0,
+          "matched_pairs": [
+            {
+              "col_a": "x_value",
+              "col_b": "y_value"
+            }
+          ]
+        }
+      }
+    ],
     "meta": {
-      "claim_count": 0,
-      "verified_count": 0,
+      "claim_count": 1,
+      "verified_count": 1,
       "unverified_count": 0
     }
   },
   "plan": {
-    "plan_id": "deterministic_plan_v1",
+    "plan_id": "deterministic_plan_v2",
     "steps": [
       {
         "step_id": "step_1_load_table",
@@ -290,48 +320,106 @@
         ]
       },
       {
-        "step_id": "step_4_run_analysis_tools",
-        "step_type": "run_analysis_tools",
+        "step_id": "step_4_build_dataset_profile",
+        "step_type": "build_dataset_profile",
         "inputs": [],
-        "params": {},
+        "params": {
+          "dominant_mode": "numeric"
+        },
         "depends_on": [
           "step_3_run_dq_suite"
         ]
       },
       {
-        "step_id": "step_5_verify_claims",
+        "step_id": "step_5_select_tools",
+        "step_type": "select_tools",
+        "inputs": [],
+        "params": {
+          "selected_tool_ids": [
+            "column_frequency",
+            "numeric_summary",
+            "outlier_summary",
+            "correlation_scan"
+          ]
+        },
+        "depends_on": [
+          "step_4_build_dataset_profile"
+        ]
+      },
+      {
+        "step_id": "step_6_run_analysis_tools",
+        "step_type": "run_analysis_tools",
+        "inputs": [],
+        "params": {
+          "selected_tool_ids": [
+            "column_frequency",
+            "numeric_summary",
+            "outlier_summary",
+            "correlation_scan"
+          ]
+        },
+        "depends_on": [
+          "step_5_select_tools"
+        ]
+      },
+      {
+        "step_id": "step_7_generate_claims",
+        "step_type": "generate_claims",
+        "inputs": [],
+        "params": {
+          "auto_claims_enabled": true,
+          "claims_provided": false
+        },
+        "depends_on": [
+          "step_6_run_analysis_tools"
+        ]
+      },
+      {
+        "step_id": "step_8_verify_claims",
         "step_type": "verify_claims",
         "inputs": [],
         "params": {
           "claims_provided": false
         },
         "depends_on": [
-          "step_4_run_analysis_tools"
+          "step_7_generate_claims"
         ]
       },
       {
-        "step_id": "step_6_build_report",
+        "step_id": "step_9_build_report",
         "step_type": "build_report",
         "inputs": [],
         "params": {},
         "depends_on": [
-          "step_5_verify_claims"
+          "step_8_verify_claims"
         ]
       }
     ],
-    "meta": {}
+    "meta": {
+      "source_path": "tests/fixtures/correlation.csv",
+      "sheet_name": null,
+      "claims_provided": false,
+      "dominant_mode": "numeric",
+      "selected_tool_ids": [
+        "column_frequency",
+        "numeric_summary",
+        "outlier_summary",
+        "correlation_scan"
+      ],
+      "auto_claims_enabled": true
+    }
   },
   "summary": {
     "rows": 30,
     "columns": 3,
     "error_count": 0,
     "warning_count": 0,
-    "verified_claim_count": 0
+    "verified_claim_count": 1
   },
   "issues": [],
   "meta": {
     "evidence_count": 6,
-    "claim_count": 0,
+    "claim_count": 1,
     "issue_count": 0
   }
 }

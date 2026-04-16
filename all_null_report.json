@@ -191,17 +191,6 @@
   },
   "evidence": [
     {
-      "evidence_id": "column_frequency:all_null",
-      "source": "analysis_tools.column_frequency",
-      "metric_name": "top_value_counts",
-      "value": [],
-      "details": {
-        "column_name": "all_null",
-        "top_k": 5,
-        "non_null_count": 0
-      }
-    },
-    {
       "evidence_id": "column_frequency:category",
       "source": "analysis_tools.column_frequency",
       "metric_name": "top_value_counts",
@@ -229,21 +218,6 @@
       }
     },
     {
-      "evidence_id": "numeric_summary:record_id",
-      "source": "analysis_tools.numeric_summary",
-      "metric_name": "numeric_summary",
-      "value": {
-        "count": 4,
-        "min": 1.0,
-        "max": 4.0,
-        "mean": 2.5,
-        "median": 2.5
-      },
-      "details": {
-        "column_name": "record_id"
-      }
-    },
-    {
       "evidence_id": "numeric_summary:value",
       "source": "analysis_tools.numeric_summary",
       "metric_name": "numeric_summary",
@@ -256,55 +230,6 @@
       },
       "details": {
         "column_name": "value"
-      }
-    },
-    {
-      "evidence_id": "outlier_summary:record_id",
-      "source": "analysis_tools.outlier_summary",
-      "metric_name": "iqr_outlier_summary",
-      "value": {
-        "count": 4,
-        "q1": 1.75,
-        "q3": 3.25,
-        "iqr": 1.5,
-        "lower_bound": -0.5,
-        "upper_bound": 5.5,
-        "outlier_count": 0,
-        "outlier_ratio": 0.0
-      },
-      "details": {
-        "column_name": "record_id",
-        "method": "iqr"
-      }
-    },
-    {
-      "evidence_id": "outlier_summary:value",
-      "source": "analysis_tools.outlier_summary",
-      "metric_name": "iqr_outlier_summary",
-      "value": {
-        "count": 4,
-        "q1": 99.5,
-        "q3": 106.25,
-        "iqr": 6.75,
-        "lower_bound": 89.375,
-        "upper_bound": 116.375,
-        "outlier_count": 0,
-        "outlier_ratio": 0.0
-      },
-      "details": {
-        "column_name": "value",
-        "method": "iqr"
-      }
-    },
-    {
-      "evidence_id": "correlation_scan:record_id:value",
-      "source": "analysis_tools.correlation_scan",
-      "metric_name": "pearson_correlation",
-      "value": 0.5522,
-      "details": {
-        "col_a": "record_id",
-        "col_b": "value",
-        "pair_count": 4
       }
     }
   ],
@@ -319,7 +244,7 @@
     }
   },
   "plan": {
-    "plan_id": "deterministic_plan_v1",
+    "plan_id": "deterministic_plan_v2",
     "steps": [
       {
         "step_id": "step_1_load_table",
@@ -350,36 +275,88 @@
         ]
       },
       {
-        "step_id": "step_4_run_analysis_tools",
-        "step_type": "run_analysis_tools",
+        "step_id": "step_4_build_dataset_profile",
+        "step_type": "build_dataset_profile",
         "inputs": [],
-        "params": {},
+        "params": {
+          "dominant_mode": "tiny"
+        },
         "depends_on": [
           "step_3_run_dq_suite"
         ]
       },
       {
-        "step_id": "step_5_verify_claims",
+        "step_id": "step_5_select_tools",
+        "step_type": "select_tools",
+        "inputs": [],
+        "params": {
+          "selected_tool_ids": [
+            "column_frequency",
+            "numeric_summary"
+          ]
+        },
+        "depends_on": [
+          "step_4_build_dataset_profile"
+        ]
+      },
+      {
+        "step_id": "step_6_run_analysis_tools",
+        "step_type": "run_analysis_tools",
+        "inputs": [],
+        "params": {
+          "selected_tool_ids": [
+            "column_frequency",
+            "numeric_summary"
+          ]
+        },
+        "depends_on": [
+          "step_5_select_tools"
+        ]
+      },
+      {
+        "step_id": "step_7_generate_claims",
+        "step_type": "generate_claims",
+        "inputs": [],
+        "params": {
+          "auto_claims_enabled": true,
+          "claims_provided": false
+        },
+        "depends_on": [
+          "step_6_run_analysis_tools"
+        ]
+      },
+      {
+        "step_id": "step_8_verify_claims",
         "step_type": "verify_claims",
         "inputs": [],
         "params": {
           "claims_provided": false
         },
         "depends_on": [
-          "step_4_run_analysis_tools"
+          "step_7_generate_claims"
         ]
       },
       {
-        "step_id": "step_6_build_report",
+        "step_id": "step_9_build_report",
         "step_type": "build_report",
         "inputs": [],
         "params": {},
         "depends_on": [
-          "step_5_verify_claims"
+          "step_8_verify_claims"
         ]
       }
     ],
-    "meta": {}
+    "meta": {
+      "source_path": "tests/fixtures/all_null_column.csv",
+      "sheet_name": null,
+      "claims_provided": false,
+      "dominant_mode": "tiny",
+      "selected_tool_ids": [
+        "column_frequency",
+        "numeric_summary"
+      ],
+      "auto_claims_enabled": true
+    }
   },
   "summary": {
     "rows": 4,
@@ -423,7 +400,7 @@
     }
   ],
   "meta": {
-    "evidence_count": 7,
+    "evidence_count": 2,
     "claim_count": 0,
     "issue_count": 2
   }

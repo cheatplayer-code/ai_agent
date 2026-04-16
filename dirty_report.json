@@ -369,32 +369,6 @@
       }
     },
     {
-      "evidence_id": "column_frequency:empty_notes",
-      "source": "analysis_tools.column_frequency",
-      "metric_name": "top_value_counts",
-      "value": [],
-      "details": {
-        "column_name": "empty_notes",
-        "top_k": 5,
-        "non_null_count": 0
-      }
-    },
-    {
-      "evidence_id": "numeric_summary:id",
-      "source": "analysis_tools.numeric_summary",
-      "metric_name": "numeric_summary",
-      "value": {
-        "count": 7,
-        "min": 1.0,
-        "max": 6.0,
-        "mean": 3.5714,
-        "median": 4.0
-      },
-      "details": {
-        "column_name": "id"
-      }
-    },
-    {
       "evidence_id": "numeric_summary:score",
       "source": "analysis_tools.numeric_summary",
       "metric_name": "numeric_summary",
@@ -407,25 +381,6 @@
       },
       "details": {
         "column_name": "score"
-      }
-    },
-    {
-      "evidence_id": "outlier_summary:id",
-      "source": "analysis_tools.outlier_summary",
-      "metric_name": "iqr_outlier_summary",
-      "value": {
-        "count": 7,
-        "q1": 2.5,
-        "q3": 4.5,
-        "iqr": 2.0,
-        "lower_bound": -0.5,
-        "upper_bound": 7.5,
-        "outlier_count": 0,
-        "outlier_ratio": 0.0
-      },
-      "details": {
-        "column_name": "id",
-        "method": "iqr"
       }
     },
     {
@@ -446,17 +401,6 @@
         "column_name": "score",
         "method": "iqr"
       }
-    },
-    {
-      "evidence_id": "correlation_scan:id:score",
-      "source": "analysis_tools.correlation_scan",
-      "metric_name": "pearson_correlation",
-      "value": -0.3652,
-      "details": {
-        "col_a": "id",
-        "col_b": "score",
-        "pair_count": 5
-      }
     }
   ],
   "claims": [],
@@ -470,7 +414,7 @@
     }
   },
   "plan": {
-    "plan_id": "deterministic_plan_v1",
+    "plan_id": "deterministic_plan_v2",
     "steps": [
       {
         "step_id": "step_1_load_table",
@@ -501,36 +445,91 @@
         ]
       },
       {
-        "step_id": "step_4_run_analysis_tools",
-        "step_type": "run_analysis_tools",
+        "step_id": "step_4_build_dataset_profile",
+        "step_type": "build_dataset_profile",
         "inputs": [],
-        "params": {},
+        "params": {
+          "dominant_mode": "dq_first"
+        },
         "depends_on": [
           "step_3_run_dq_suite"
         ]
       },
       {
-        "step_id": "step_5_verify_claims",
+        "step_id": "step_5_select_tools",
+        "step_type": "select_tools",
+        "inputs": [],
+        "params": {
+          "selected_tool_ids": [
+            "column_frequency",
+            "numeric_summary",
+            "outlier_summary"
+          ]
+        },
+        "depends_on": [
+          "step_4_build_dataset_profile"
+        ]
+      },
+      {
+        "step_id": "step_6_run_analysis_tools",
+        "step_type": "run_analysis_tools",
+        "inputs": [],
+        "params": {
+          "selected_tool_ids": [
+            "column_frequency",
+            "numeric_summary",
+            "outlier_summary"
+          ]
+        },
+        "depends_on": [
+          "step_5_select_tools"
+        ]
+      },
+      {
+        "step_id": "step_7_generate_claims",
+        "step_type": "generate_claims",
+        "inputs": [],
+        "params": {
+          "auto_claims_enabled": true,
+          "claims_provided": false
+        },
+        "depends_on": [
+          "step_6_run_analysis_tools"
+        ]
+      },
+      {
+        "step_id": "step_8_verify_claims",
         "step_type": "verify_claims",
         "inputs": [],
         "params": {
           "claims_provided": false
         },
         "depends_on": [
-          "step_4_run_analysis_tools"
+          "step_7_generate_claims"
         ]
       },
       {
-        "step_id": "step_6_build_report",
+        "step_id": "step_9_build_report",
         "step_type": "build_report",
         "inputs": [],
         "params": {},
         "depends_on": [
-          "step_5_verify_claims"
+          "step_8_verify_claims"
         ]
       }
     ],
-    "meta": {}
+    "meta": {
+      "source_path": "tests/fixtures/dirty.csv",
+      "sheet_name": null,
+      "claims_provided": false,
+      "dominant_mode": "dq_first",
+      "selected_tool_ids": [
+        "column_frequency",
+        "numeric_summary",
+        "outlier_summary"
+      ],
+      "auto_claims_enabled": true
+    }
   },
   "summary": {
     "rows": 7,
@@ -654,7 +653,7 @@
     }
   ],
   "meta": {
-    "evidence_count": 9,
+    "evidence_count": 5,
     "claim_count": 0,
     "issue_count": 7
   }
