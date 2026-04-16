@@ -152,7 +152,7 @@ class AnalysisSummary(_StrictBase):
 
 
 class AnalysisReport(_StrictBase):
-    model_config = ConfigDict(extra="forbid", serialize_by_alias=True)
+    model_config = ConfigDict(extra="forbid", serialize_by_alias=True, populate_by_name=True)
 
     report_version: str = REPORT_VERSION
     generated_at: str | None
