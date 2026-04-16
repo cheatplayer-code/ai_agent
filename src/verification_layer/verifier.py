@@ -346,8 +346,7 @@ def _verify_single_claim(
         return _verify_high_cardinality(claim, evidence, dq_suite)
     if claim.claim_type == CLAIM_TYPE_DATE_RANGE_PRESENT:
         return _verify_date_range_present(claim, evidence)
-
-    return _warning_result(claim.claim_id, f"Unhandled claim type: {claim.claim_type}.")
+    raise ValueError(f"Unhandled supported claim type: {claim.claim_type}")
 
 
 def verify_claims(
