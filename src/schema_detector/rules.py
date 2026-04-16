@@ -9,6 +9,7 @@ from typing import Any
 import pandas as pd
 
 
+# Common boolean tokens intentionally include "1"/"0".
 _TRUE_TOKENS = {"true", "yes", "y", "1"}
 _FALSE_TOKENS = {"false", "no", "n", "0"}
 _ALL_NULL_CONFIDENCE = 0.1
@@ -151,6 +152,8 @@ def infer_column_type(series: pd.Series) -> tuple[str, float]:
     if non_null.empty:
         return "string", _ALL_NULL_CONFIDENCE
 
+    # Boolean intentionally takes precedence over numeric inference so 1/0-like
+    # token columns resolve as boolean when fully boolean-parseable.
     is_bool, bool_conf = infer_boolean_series(series)
     if is_bool:
         return "boolean", bool_conf
