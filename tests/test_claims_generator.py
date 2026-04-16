@@ -127,7 +127,7 @@ def test_high_missingness_generates_when_derived_ratio_meets_threshold() -> None
                 metrics={
                     "affected_column_count": 1,
                     "total_missing_cells": 1,
-                    "row_count": 2,
+                    "row_count": 1,
                     "column_count": 2,
                 },
                 exception_info=None,
