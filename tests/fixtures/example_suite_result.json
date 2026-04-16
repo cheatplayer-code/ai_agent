@@ -1,19 +1,39 @@
 {
-  "suite_name": "basic_quality_suite",
+  "suite_id": "basic_quality_suite",
   "success": false,
-  "total_checks": 3,
-  "passed_checks": 2,
-  "failed_checks": 1,
-  "run_time_seconds": 0.12,
-  "issues": [
+  "statistics": {
+    "evaluated_count": 1,
+    "success_count": 0,
+    "failure_count": 1,
+    "error_count": 0,
+    "warning_count": 1,
+    "info_count": 0
+  },
+  "results": [
     {
-      "id": "issue-001",
-      "category": "dq",
+      "check_id": "check-missing-email",
+      "check_name": "Missing value check",
       "severity": "warning",
-      "column": "email",
-      "row_index": 42,
-      "message": "Missing value in column 'email'.",
-      "details": {}
+      "success": false,
+      "issues": [
+        {
+          "issue_id": "issue-001",
+          "category": "dq",
+          "severity": "warning",
+          "code": "MISSING_VALUE",
+          "message": "Missing value in column 'email'.",
+          "location": {
+            "row_number": 42,
+            "column_name": "email",
+            "column_index": 0,
+            "sheet_name": null
+          },
+          "details": {}
+        }
+      ],
+      "metrics": {
+        "missing_count": 1
+      }
     }
   ]
 }

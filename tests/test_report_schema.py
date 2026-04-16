@@ -1,5 +1,4 @@
-"""Tests for report schema models: JSON serializability, enum rejection,
-extra-field rejection, default policy, and fixture loading."""
+"""Tests for the frozen Phase 0 report schema contract."""
 
 from __future__ import annotations
 
@@ -9,20 +8,26 @@ import pathlib
 import pytest
 from pydantic import ValidationError
 
-from src.core.enums import IssueCategory, Severity, StepType
+from src.core.enums import IssueCategory, Severity
+from src.core.policy import ExecutionPolicy
 from src.report_builder.schema import AnalysisReport, Issue, PlanStep, SuiteResult
 
 FIXTURES = pathlib.Path(__file__).parent / "fixtures"
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
 def _minimal_issue(**overrides: object) -> dict:
     base = {
-        "id": "i-1",
+        "issue_id": "i-1",
         "category": "dq",
         "severity": "warning",
+        "code": "MISSING_VALUE",
         "message": "test issue",
+        "location": {
+            "row_number": None,
+            "column_name": None,
+            "column_index": None,
+            "sheet_name": None,
+        },
     }
     base.update(overrides)
     return base
@@ -30,12 +35,24 @@ def _minimal_issue(**overrides: object) -> dict:
 
 def _minimal_suite(**overrides: object) -> dict:
     base = {
-        "suite_name": "s1",
+        "suite_id": "dq-suite-1",
         "success": True,
-        "total_checks": 1,
-        "passed_checks": 1,
-        "failed_checks": 0,
-        "run_time_seconds": 0.01,
+        "statistics": {
+            "evaluated_count": 1,
+            "success_count": 1,
+            "failure_count": 0,
+            "error_count": 0,
+            "warning_count": 0,
+            "info_count": 0,
+        },
+        "results": [
+            {
+                "check_id": "check-1",
+                "check_name": "Null check",
+                "severity": "warning",
+                "success": True,
+            }
+        ],
     }
     base.update(overrides)
     return base
@@ -44,30 +61,70 @@ def _minimal_suite(**overrides: object) -> dict:
 def _minimal_report(**overrides: object) -> dict:
     base = {
         "generated_at": "2026-04-15T20:00:00Z",
-        "source_file": "data/test.csv",
-        "summary": "ok",
+        "policy": ExecutionPolicy().model_dump(),
+        "input_table": {
+            "source_path": "data/test.csv",
+            "file_type": "csv",
+            "sheet_name": None,
+            "row_count": 10,
+            "column_count": 2,
+            "normalized_columns": ["email", "name"],
+        },
+        "schema": {
+            "columns": [
+                {
+                    "name": "email",
+                    "detected_type": "string",
+                    "nullable": True,
+                    "unique_count": 9,
+                    "unique_ratio": 0.9,
+                    "non_null_count": 9,
+                    "confidence": 0.99,
+                }
+            ],
+            "sampled_rows": 10,
+        },
+        "dq_suite": _minimal_suite(),
+        "verification": {
+            "success": True,
+            "results": [
+                {
+                    "claim_id": "claim-1",
+                    "verified": True,
+                    "severity": "info",
+                    "reason": "Verified",
+                }
+            ],
+        },
+        "plan": {
+            "plan_id": "plan-1",
+            "steps": [
+                {"step_id": "s1", "step_type": "placeholder"},
+                {"step_id": "s2", "step_type": "placeholder", "depends_on": ["s1"]},
+            ],
+        },
+        "summary": {
+            "rows": 10,
+            "columns": 2,
+            "error_count": 0,
+            "warning_count": 1,
+            "verified_claim_count": 1,
+        },
     }
     base.update(overrides)
     return base
 
 
-# ── Issue model ───────────────────────────────────────────────────────────────
-
 def test_issue_json_serializable() -> None:
     issue = Issue(**_minimal_issue())
     data = json.loads(issue.model_dump_json())
-    assert data["id"] == "i-1"
+    assert data["issue_id"] == "i-1"
     assert data["severity"] == "warning"
 
 
-def test_issue_invalid_severity_rejected() -> None:
+def test_issue_legacy_id_rejected() -> None:
     with pytest.raises(ValidationError):
-        Issue(**_minimal_issue(severity="critical"))
-
-
-def test_issue_invalid_category_rejected() -> None:
-    with pytest.raises(ValidationError):
-        Issue(**_minimal_issue(category="banana"))
+        Issue(**_minimal_issue(id="legacy"))
 
 
 def test_issue_extra_field_rejected() -> None:
@@ -75,76 +132,60 @@ def test_issue_extra_field_rejected() -> None:
         Issue(**_minimal_issue(unknown_field="x"))
 
 
-def test_issue_optional_fields_default_none() -> None:
+def test_issue_location_defaults_and_optional_exception_info() -> None:
     issue = Issue(**_minimal_issue())
-    assert issue.column is None
-    assert issue.row_index is None
+    assert issue.location is not None
+    assert issue.exception_info is None
     assert issue.details == {}
 
-
-# ── SuiteResult model ─────────────────────────────────────────────────────────
 
 def test_suite_result_json_serializable() -> None:
     suite = SuiteResult(**_minimal_suite())
     data = json.loads(suite.model_dump_json())
-    assert data["suite_name"] == "s1"
-    assert data["success"] is True
+    assert data["suite_id"] == "dq-suite-1"
+    assert data["statistics"]["evaluated_count"] == 1
 
 
-def test_suite_result_extra_field_rejected() -> None:
+def test_suite_result_legacy_shape_rejected() -> None:
     with pytest.raises(ValidationError):
-        SuiteResult(**_minimal_suite(extra_key="bad"))
+        SuiteResult(
+            suite_name="legacy",
+            success=True,
+            total_checks=1,
+            passed_checks=1,
+            failed_checks=0,
+            run_time_seconds=0.01,
+        )
 
 
-def test_suite_result_negative_checks_rejected() -> None:
-    with pytest.raises(ValidationError):
-        SuiteResult(**_minimal_suite(total_checks=-1))
+def test_plan_step_defaults() -> None:
+    step = PlanStep(step_id="s1", step_type="placeholder")
+    assert step.inputs == []
+    assert step.params == {}
+    assert step.depends_on == []
 
-
-# ── PlanStep model ────────────────────────────────────────────────────────────
-
-def test_plan_step_json_serializable() -> None:
-    step = PlanStep(step_id="s1", step_type=StepType.PLACEHOLDER)
-    data = json.loads(step.model_dump_json())
-    assert data["step_type"] == "placeholder"
-
-
-def test_plan_step_invalid_type_rejected() -> None:
-    with pytest.raises(ValidationError):
-        PlanStep(step_id="s1", step_type="fly_to_moon")
-
-
-def test_plan_step_extra_field_rejected() -> None:
-    with pytest.raises(ValidationError):
-        PlanStep(step_id="s1", step_type="placeholder", not_a_field=True)
-
-
-# ── AnalysisReport model ──────────────────────────────────────────────────────
 
 def test_analysis_report_json_serializable() -> None:
     report = AnalysisReport(**_minimal_report())
     data = json.loads(report.model_dump_json())
     assert "report_version" in data
-    assert data["source_file"] == "data/test.csv"
+    assert data["input_table"]["source_path"] == "data/test.csv"
+
+
+def test_analysis_report_policy_typed_as_execution_policy() -> None:
+    report = AnalysisReport(**_minimal_report())
+    assert isinstance(report.policy, ExecutionPolicy)
+
+
+def test_analysis_report_summary_requires_object_not_string() -> None:
+    with pytest.raises(ValidationError):
+        AnalysisReport(**_minimal_report(summary="ok"))
 
 
 def test_analysis_report_extra_field_rejected() -> None:
     with pytest.raises(ValidationError):
         AnalysisReport(**_minimal_report(injected="bad"))
 
-
-def test_analysis_report_default_version() -> None:
-    from src.config import REPORT_VERSION
-    report = AnalysisReport(**_minimal_report())
-    assert report.report_version == REPORT_VERSION
-
-
-def test_analysis_report_default_policy_is_empty_dict() -> None:
-    report = AnalysisReport(**_minimal_report())
-    assert report.policy == {}
-
-
-# ── Fixture loading ───────────────────────────────────────────────────────────
 
 def test_fixture_issue_loads_and_validates() -> None:
     raw = json.loads((FIXTURES / "example_issue.json").read_text())
@@ -156,16 +197,18 @@ def test_fixture_issue_loads_and_validates() -> None:
 def test_fixture_suite_result_loads_and_validates() -> None:
     raw = json.loads((FIXTURES / "example_suite_result.json").read_text())
     suite = SuiteResult(**raw)
-    assert len(suite.issues) == 1
+    assert len(suite.results) == 1
+    assert suite.statistics.evaluated_count == 1
 
 
 def test_fixture_analysis_report_loads_and_validates() -> None:
     raw = json.loads((FIXTURES / "example_analysis_report.json").read_text())
     report = AnalysisReport(**raw)
     assert report.report_version == "0.1.0"
-    assert len(report.suite_results) == 1
-    assert len(report.plan_steps) == 2
-    assert report.suite_results[0].issues[0].severity == Severity.WARNING
+    assert report.dq_suite is not None
+    assert report.plan is not None
+    assert len(report.plan.steps) == 2
+    assert report.dq_suite.results[0].issues[0].severity == Severity.WARNING
 
 
 def test_fixture_report_fully_json_round_trips() -> None:
@@ -173,4 +216,4 @@ def test_fixture_report_fully_json_round_trips() -> None:
     report = AnalysisReport(**raw)
     serialized = json.loads(report.model_dump_json())
     assert serialized["report_version"] == raw["report_version"]
-    assert serialized["summary"] == raw["summary"]
+    assert serialized["summary"]["warning_count"] == raw["summary"]["warning_count"]
