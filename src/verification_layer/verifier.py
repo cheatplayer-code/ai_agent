@@ -69,7 +69,145 @@ def _metric_evidence(evidence: list[dict[str, Any]], metric_names: set[str]) -> 
     return matches
 
 
-def _verify_high_missingness(claim: InsightClaim, evidence: list[dict[str, Any]]) -> VerificationResult:
+def _numeric(value: Any) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+def _derive_missing_ratio_from_mapping(mapping: dict[str, Any]) -> float | None:
+    direct_keys = ("missing_ratio", "ratio")
+    for key in direct_keys:
+        numeric = _numeric(mapping.get(key))
+        if numeric is not None:
+            return numeric
+
+    total_missing_cells = _numeric(mapping.get("total_missing_cells"))
+    total_cells = _numeric(mapping.get("total_cells"))
+    if (
+        total_missing_cells is not None
+        and total_cells is not None
+        and total_cells > 0
+    ):
+        return total_missing_cells / total_cells
+
+    row_count = _numeric(mapping.get("row_count"))
+    column_count = _numeric(mapping.get("column_count"))
+    if (
+        total_missing_cells is not None
+        and row_count is not None
+        and column_count is not None
+    ):
+        derived_total_cells = row_count * column_count
+        if derived_total_cells > 0:
+            return total_missing_cells / derived_total_cells
+
+    missing_count = _numeric(mapping.get("missing_count"))
+    total_rows = _numeric(mapping.get("total_rows"))
+    if missing_count is not None and total_rows is not None and total_rows > 0:
+        return missing_count / total_rows
+
+    non_null_count = _numeric(mapping.get("non_null_count"))
+    if missing_count is not None and non_null_count is not None:
+        denominator = missing_count + non_null_count
+        if denominator > 0:
+            return missing_count / denominator
+
+    return None
+
+
+def _verify_high_missingness(
+    claim: InsightClaim,
+    evidence: list[dict[str, Any]],
+    dq_suite: SuiteResult | None,
+) -> VerificationResult:
+    if dq_suite is not None:
+        refs: list[str] = []
+        observed_max_ratio: float | None = None
+        observed_total_missing_cells: float | None = None
+
+        for check in dq_suite.results:
+            if check.check_id != "missing_values":
+                continue
+
+            derived_from_metrics = _derive_missing_ratio_from_mapping(check.metrics)
+            if derived_from_metrics is not None:
+                observed_max_ratio = (
+                    derived_from_metrics
+                    if observed_max_ratio is None
+                    else max(observed_max_ratio, derived_from_metrics)
+                )
+
+            total_missing_cells = _numeric(check.metrics.get("total_missing_cells"))
+            if total_missing_cells is not None:
+                observed_total_missing_cells = (
+                    total_missing_cells
+                    if observed_total_missing_cells is None
+                    else max(observed_total_missing_cells, total_missing_cells)
+                )
+
+            for issue in check.issues:
+                if issue.code != "MISSING_VALUES":
+                    continue
+                refs.append(issue.issue_id)
+                issue_ratio = _derive_missing_ratio_from_mapping(issue.details)
+                if issue_ratio is not None:
+                    observed_max_ratio = (
+                        issue_ratio
+                        if observed_max_ratio is None
+                        else max(observed_max_ratio, issue_ratio)
+                    )
+                issue_missing_count = _numeric(issue.details.get("missing_count"))
+                if issue_missing_count is not None:
+                    observed_total_missing_cells = (
+                        issue_missing_count
+                        if observed_total_missing_cells is None
+                        else max(observed_total_missing_cells, issue_missing_count)
+                    )
+
+        if observed_max_ratio is not None:
+            if observed_max_ratio >= HIGH_MISSINGNESS_RATIO_THRESHOLD:
+                return _info_result(
+                    claim.claim_id,
+                    "Missingness threshold met from dq_suite.",
+                    evidence_refs=refs,
+                    details={
+                        "threshold": HIGH_MISSINGNESS_RATIO_THRESHOLD,
+                        "observed_missing_ratio": observed_max_ratio,
+                        "source": "dq_suite.missing_values",
+                    },
+                )
+            return _warning_result(
+                claim.claim_id,
+                "Missingness threshold not met from dq_suite.",
+                evidence_refs=refs,
+                details={
+                    "threshold": HIGH_MISSINGNESS_RATIO_THRESHOLD,
+                    "observed_missing_ratio": observed_max_ratio,
+                    "source": "dq_suite.missing_values",
+                },
+            )
+
+        if observed_total_missing_cells is not None and observed_total_missing_cells <= 0:
+            return _warning_result(
+                claim.claim_id,
+                "Missingness threshold not met from dq_suite.",
+                evidence_refs=refs,
+                details={
+                    "threshold": HIGH_MISSINGNESS_RATIO_THRESHOLD,
+                    "observed_total_missing_cells": observed_total_missing_cells,
+                    "source": "dq_suite.missing_values",
+                },
+            )
+
+        if refs:
+            return _warning_result(
+                claim.claim_id,
+                "Missingness ratio unavailable in dq_suite missing_values results.",
+                evidence_refs=refs,
+                details={"source": "dq_suite.missing_values"},
+            )
+
     candidates = _metric_evidence(evidence, {"missing_values"})
     if not candidates:
         return _warning_result(
@@ -337,7 +475,7 @@ def _verify_single_claim(
         )
 
     if claim.claim_type == CLAIM_TYPE_HIGH_MISSINGNESS:
-        return _verify_high_missingness(claim, evidence)
+        return _verify_high_missingness(claim, evidence, dq_suite)
     if claim.claim_type == CLAIM_TYPE_OUTLIERS_PRESENT:
         return _verify_outliers_present(claim, evidence)
     if claim.claim_type == CLAIM_TYPE_STRONG_CORRELATION:
