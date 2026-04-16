@@ -19,6 +19,7 @@ from src.report_builder.schema import (
     SuiteResult,
     VerificationSuiteResult,
 )
+from src.ui_contract import generate_ui_contract_fields
 
 
 def _to_evidence_item(row: dict[str, Any]) -> EvidenceItem:
@@ -57,6 +58,7 @@ def build_analysis_report(
     verification: VerificationSuiteResult | None,
     plan: Plan | None = None,
     product_output: dict[str, Any] | None = None,
+    dominant_mode: str | None = None,
 ) -> AnalysisReport:
     """Build a deterministic, frozen AnalysisReport from pipeline outputs."""
     evidence_items = [_to_evidence_item(row) for row in evidence]
@@ -71,6 +73,16 @@ def build_analysis_report(
     )
 
     product = product_output or {}
+    ui_contract = generate_ui_contract_fields(
+        source_path=table.source_path,
+        dominant_mode=dominant_mode,
+        issues=issues,
+        verification=verification,
+        claims=claims,
+        key_findings=_filter_str_list(product.get("key_findings")),
+        executive_summary=str(product.get("executive_summary", "")),
+        evidence=evidence_items,
+    )
 
     return AnalysisReport(
         generated_at=None,
@@ -95,6 +107,15 @@ def build_analysis_report(
         key_findings=_filter_str_list(product.get("key_findings")),
         recommendations=_filter_str_list(product.get("recommendations")),
         skipped_tools=_filter_str_list(product.get("skipped_tools")),
+        file_name=str(ui_contract.get("file_name", "")),
+        analysis_mode_label=str(ui_contract.get("analysis_mode_label", "")),
+        data_quality_score=int(ui_contract.get("data_quality_score", 0)),
+        main_finding=str(ui_contract.get("main_finding", "")),
+        top_issue=ui_contract.get("top_issue"),
+        confidence_level=str(ui_contract.get("confidence_level", "")),
+        confidence_reason=str(ui_contract.get("confidence_reason", "")),
+        chart_specs=ui_contract.get("chart_specs", []),
+        export_state=ui_contract.get("export_state", {}),
         summary=AnalysisSummary(
             rows=table.row_count,
             columns=table.column_count,

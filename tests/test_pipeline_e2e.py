@@ -108,6 +108,23 @@ def test_pipeline_output_structure_and_summary_consistency() -> None:
     assert isinstance(report.key_findings, list)
     assert isinstance(report.recommendations, list)
     assert isinstance(report.skipped_tools, list)
+    assert report.file_name == "sample.csv"
+    assert report.analysis_mode_label
+    assert 0 <= report.data_quality_score <= 100
+    assert report.main_finding
+    assert report.confidence_level in {"high", "medium", "low"}
+    assert report.confidence_reason
+    assert isinstance(report.chart_specs, list)
+    assert 1 <= len(report.chart_specs) <= 3
+    assert report.chart_specs[0]["chart_type"] == "metric_cards"
+    assert isinstance(report.export_state, dict)
+    assert set(report.export_state.keys()) == {
+        "summary_ready",
+        "insights_generated",
+        "quality_issues_detected",
+        "charts_prepared",
+        "export_available",
+    }
 
     expected_error_count = sum(1 for issue in report.issues if issue.severity == Severity.ERROR)
     expected_warning_count = sum(1 for issue in report.issues if issue.severity == Severity.WARNING)

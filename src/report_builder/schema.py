@@ -170,6 +170,15 @@ class AnalysisReport(_StrictBase):
     key_findings: list[str] = Field(default_factory=list)
     recommendations: list[str] = Field(default_factory=list)
     skipped_tools: list[str] = Field(default_factory=list)
+    file_name: str = ""
+    analysis_mode_label: str = ""
+    data_quality_score: int = 0
+    main_finding: str = ""
+    top_issue: str | None = None
+    confidence_level: str = ""
+    confidence_reason: str = ""
+    chart_specs: list[dict[str, Any]] = Field(default_factory=list)
+    export_state: dict[str, Any] = Field(default_factory=dict)
     summary: AnalysisSummary
     issues: list[Issue] = Field(default_factory=list)
     meta: dict[str, Any] = Field(default_factory=dict)

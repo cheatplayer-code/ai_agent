@@ -177,6 +177,15 @@ def test_analysis_report_json_serializable() -> None:
     assert "report_version" in data
     assert data["input_table"]["source_path"] == "data/test.csv"
     assert data["dataset_kind"] == "generic_tabular"
+    assert "file_name" in data
+    assert "analysis_mode_label" in data
+    assert "data_quality_score" in data
+    assert "main_finding" in data
+    assert "top_issue" in data
+    assert "confidence_level" in data
+    assert "confidence_reason" in data
+    assert "chart_specs" in data
+    assert "export_state" in data
 
 
 def test_analysis_report_policy_typed_as_execution_policy() -> None:
