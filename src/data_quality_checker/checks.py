@@ -9,6 +9,7 @@ from typing import Any, Callable
 from src.core.enums import IssueCategory, Severity
 from src.core.policy import ExecutionPolicy
 from src.core.types import TableArtifact
+from src.file_loader.normalize import normalize_column_name
 from src.report_builder.schema import DetectedSchema, Issue, Location
 
 HIGH_CARDINALITY_RATIO_THRESHOLD = 0.9
@@ -34,6 +35,7 @@ def _issue(
     code: str,
     message: str,
     column_name: str | None = None,
+    sheet_name: str | None = None,
     details: dict[str, Any] | None = None,
 ) -> Issue:
     location = None
@@ -42,7 +44,7 @@ def _issue(
             row_number=None,
             column_name=column_name,
             column_index=None,
-            sheet_name=None,
+            sheet_name=sheet_name,
         )
     return Issue(
         issue_id=issue_id,
@@ -76,6 +78,7 @@ def run_missing_values(
                     code="MISSING_VALUES",
                     message=f"Column '{column_name}' contains {missing_count} missing values.",
                     column_name=column_name,
+                    sheet_name=table.sheet_name,
                     details={"missing_count": missing_count},
                 )
             )
@@ -106,17 +109,14 @@ def run_duplicate_rows(
     return issues, {"duplicate_row_count": duplicate_row_count}
 
 
-def _normalize_column_name(value: str) -> str:
-    return str(value).strip().lower()
-
-
 def run_duplicate_columns(
     table: TableArtifact,
     schema: DetectedSchema,
     policy: ExecutionPolicy,
 ) -> tuple[list[Issue], dict[str, Any]]:
     del schema, policy
-    normalized_columns = [_normalize_column_name(column) for column in table.df.columns.tolist()]
+    source_columns = table.original_columns or table.df.columns.tolist()
+    normalized_columns = [normalize_column_name(str(column)) for column in source_columns]
     counts = Counter(normalized_columns)
     duplicates = sorted([name for name, count in counts.items() if count > 1])
     issues: list[Issue] = []
@@ -163,6 +163,7 @@ def run_high_cardinality(
                         f"({unique_ratio:.3f})."
                     ),
                     column_name=column_name,
+                    sheet_name=table.sheet_name,
                     details={
                         "unique_ratio": unique_ratio,
                         "non_null_count": non_null_count,
@@ -196,6 +197,7 @@ def run_constant_column(
                     code="CONSTANT_COLUMN",
                     message=f"Column '{column_name}' has a single non-null value.",
                     column_name=column_name,
+                    sheet_name=table.sheet_name,
                     details={"non_null_count": non_null_count},
                 )
             )
@@ -221,6 +223,7 @@ def run_empty_column(
                     code="EMPTY_COLUMN",
                     message=f"Column '{column_name}' has no non-null values.",
                     column_name=column_name,
+                    sheet_name=table.sheet_name,
                 )
             )
     return issues, {"affected_column_count": affected_column_count}
@@ -278,4 +281,3 @@ def get_builtin_checks() -> tuple[CheckSpec, ...]:
     if len(ids) != len(set(ids)):
         raise ValueError("Built-in check IDs must be unique.")
     return BUILTIN_CHECKS
-
