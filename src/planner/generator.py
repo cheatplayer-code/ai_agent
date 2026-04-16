@@ -18,16 +18,13 @@ from src.report_builder.schema import Plan
 STEP_TYPE_BUILD_DATASET_PROFILE = "build_dataset_profile"
 STEP_TYPE_SELECT_TOOLS = "select_tools"
 STEP_TYPE_GENERATE_CLAIMS = "generate_claims"
-
-
-def _ensure_extended_step_types() -> None:
-    ALLOWED_STEP_TYPES.update(
-        {
-            STEP_TYPE_BUILD_DATASET_PROFILE,
-            STEP_TYPE_SELECT_TOOLS,
-            STEP_TYPE_GENERATE_CLAIMS,
-        }
-    )
+ALLOWED_STEP_TYPES.update(
+    {
+        STEP_TYPE_BUILD_DATASET_PROFILE,
+        STEP_TYPE_SELECT_TOOLS,
+        STEP_TYPE_GENERATE_CLAIMS,
+    }
+)
 
 
 def generate_plan(
@@ -38,7 +35,6 @@ def generate_plan(
     selected_tool_ids: list[str] | None = None,
 ) -> Plan:
     """Generate a deterministic v2 plan for the pipeline."""
-    _ensure_extended_step_types()
     selected_ids = selected_tool_ids or []
 
     steps = [

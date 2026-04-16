@@ -105,13 +105,19 @@ def generate_claims(
     profile: dict[str, Any] | None = None,
 ) -> list[InsightClaim]:
     """Generate deterministic, non-speculative claims from observed signals only."""
-    del table, schema, profile
+    has_rows = table.row_count > 0
+    schema_type_map = {column.name: column.detected_type for column in schema.columns}
+    schema_has_datetime = any(column_type == "datetime" for column_type in schema_type_map.values())
+    has_datetime_signal = schema_has_datetime
+    if isinstance(profile, dict) and "has_datetime" in profile:
+        has_datetime_signal = bool(profile.get("has_datetime"))
 
     high_missingness_supported, high_missingness_refs = _has_high_missingness(dq_suite)
     outliers_supported, outliers_refs = _has_outliers(evidence)
     strong_corr_supported, strong_corr_refs = _has_strong_correlation(evidence)
     high_cardinality_supported, high_cardinality_refs = _has_high_cardinality(dq_suite)
     date_range_supported, date_range_refs = _has_date_range(evidence)
+    date_range_supported = date_range_supported and has_datetime_signal and has_rows
 
     candidates: list[tuple[str, str, str, bool, list[str]]] = [
         (

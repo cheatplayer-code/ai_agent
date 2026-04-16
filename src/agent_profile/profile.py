@@ -155,7 +155,7 @@ def build_dataset_profile(
         dominant_mode = "temporal"
     elif len(numeric_non_id_columns) >= 2:
         dominant_mode = "numeric"
-    elif string_column_count > (numeric_column_count + datetime_column_count + boolean_column_count):
+    elif string_column_count > (table.column_count - string_column_count):
         dominant_mode = "categorical"
     else:
         dominant_mode = "mixed"

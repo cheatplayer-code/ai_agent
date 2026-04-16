@@ -31,7 +31,6 @@ def run_pipeline(
     selected_tool_ids = select_analysis_tools(
         table=table,
         schema=schema,
-        policy=policy,
         profile=profile,
     )
 

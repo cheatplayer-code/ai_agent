@@ -129,12 +129,20 @@ def _select_tool_specs(
 def select_analysis_tools(
     table: TableArtifact,
     schema: DetectedSchema,
-    policy: ExecutionPolicy,
     profile: dict[str, Any] | None = None,
 ) -> list[str]:
     """Return selected built-in tool IDs in deterministic execution order."""
-    del policy
     return [tool.tool_id for tool, _ in _select_tool_specs(table=table, schema=schema, profile=profile)]
+
+
+def _is_meaningful_evidence_row(row: dict[str, Any]) -> bool:
+    metric_name = row.get("metric_name")
+    value = row.get("value")
+    if metric_name == "date_coverage" and isinstance(value, dict):
+        non_null_count = value.get("non_null_count")
+        if isinstance(non_null_count, int) and non_null_count == 0:
+            return False
+    return True
 
 
 def run_analysis_tools(
@@ -150,12 +158,8 @@ def run_analysis_tools(
         try:
             rows = tool.runner(table, scoped_schema, policy)
             for row in rows:
-                metric_name = row.get("metric_name")
-                value = row.get("value")
-                if metric_name == "date_coverage" and isinstance(value, dict):
-                    non_null_count = value.get("non_null_count")
-                    if isinstance(non_null_count, int) and non_null_count == 0:
-                        continue
+                if not _is_meaningful_evidence_row(row):
+                    continue
                 evidence.append(dict(row))
         except Exception as exc:  # pragma: no cover - defensive path
             evidence.append(
