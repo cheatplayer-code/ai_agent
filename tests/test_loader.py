@@ -23,7 +23,7 @@ def test_load_csv_returns_table_artifact_with_normalized_columns() -> None:
     assert artifact.column_count == 3
     assert artifact.original_columns == [" Full Name ", "AGE", "City!!"]
     assert artifact.normalized_columns == ["full_name", "age", "city"]
-    assert artifact.df.columns.tolist() == artifact.original_columns
+    assert artifact.df.columns.tolist() == artifact.normalized_columns
 
 
 def test_load_xlsx_returns_table_artifact_for_sheet() -> None:
@@ -39,6 +39,28 @@ def test_load_xlsx_returns_table_artifact_for_sheet() -> None:
     assert artifact.row_count == 3
     assert artifact.column_count == 3
     assert artifact.original_columns == [" Full Name ", "AGE", "City!!"]
+    assert artifact.normalized_columns == ["full_name", "age", "city"]
+    assert artifact.df.columns.tolist() == artifact.normalized_columns
+
+
+def test_load_xlsx_without_sheet_uses_first_sheet_name() -> None:
+    source = str(FIXTURES_DIR / "sample.xlsx")
+    artifact = load_table(source_path=source, policy=ExecutionPolicy())
+
+    assert artifact.file_type == "xlsx"
+    assert artifact.sheet_name == "DataSheet"
+
+
+def test_load_xlsx_with_int_sheet_index_resolves_sheet_name() -> None:
+    source = str(FIXTURES_DIR / "sample.xlsx")
+    artifact = load_table(
+        source_path=source,
+        policy=ExecutionPolicy(),
+        sheet_name=1,
+    )
+
+    assert artifact.file_type == "xlsx"
+    assert artifact.sheet_name == "OtherSheet"
 
 
 def test_load_xlsx_missing_sheet_raises_error() -> None:
@@ -49,6 +71,17 @@ def test_load_xlsx_missing_sheet_raises_error() -> None:
             source_path=source,
             policy=ExecutionPolicy(),
             sheet_name="MissingSheet",
+        )
+
+
+def test_load_xlsx_out_of_range_sheet_index_raises_error() -> None:
+    source = str(FIXTURES_DIR / "sample.xlsx")
+
+    with pytest.raises(ValueError, match="Sheet index out of range"):
+        load_table(
+            source_path=source,
+            policy=ExecutionPolicy(),
+            sheet_name=2,
         )
 
 

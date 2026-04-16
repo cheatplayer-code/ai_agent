@@ -45,19 +45,28 @@ def load_table(
         file_type = "csv"
         resolved_sheet_name: str | None = None
     elif suffix == ".xlsx":
-        if sheet_name is not None:
-            with pd.ExcelFile(source_path, engine="openpyxl") as workbook:
-                if sheet_name not in workbook.sheet_names:
-                    raise ValueError(f"Sheet not found: {sheet_name}")
-
-        df = pd.read_excel(
-            source_path,
-            sheet_name=sheet_name if sheet_name is not None else 0,
-            engine="openpyxl",
-        )
-
         file_type = "xlsx"
-        resolved_sheet_name = str(sheet_name) if sheet_name is not None else None
+        with pd.ExcelFile(source_path, engine="openpyxl") as workbook:
+            sheet_names = workbook.sheet_names
+
+            if sheet_name is None:
+                resolved_sheet_name = sheet_names[0]
+            elif isinstance(sheet_name, str):
+                if sheet_name not in sheet_names:
+                    raise ValueError(f"Sheet not found: {sheet_name}")
+                resolved_sheet_name = sheet_name
+            elif isinstance(sheet_name, int):
+                if not 0 <= sheet_name < len(sheet_names):
+                    raise ValueError(f"Sheet index out of range: {sheet_name}")
+                resolved_sheet_name = sheet_names[sheet_name]
+            else:
+                raise ValueError(f"Unsupported sheet_name type: {type(sheet_name).__name__}")
+
+            df = pd.read_excel(
+                workbook,
+                sheet_name=resolved_sheet_name,
+                engine="openpyxl",
+            )
     else:
         raise ValueError(
             "Unsupported file extension. Only .csv and .xlsx are supported.",
@@ -66,13 +75,15 @@ def load_table(
     _enforce_limits(df=df, policy=policy)
 
     original_columns = [str(column) for column in df.columns]
-    normalized = normalize_columns(original_columns)
+    normalized_columns = normalize_columns(original_columns)
+    artifact_df = df.copy()
+    artifact_df.columns = normalized_columns
 
     return TableArtifact(
-        df=df,
+        df=artifact_df,
         source_path=source_path,
         file_type=file_type,
         sheet_name=resolved_sheet_name,
         original_columns=original_columns,
-        normalized_columns=normalized,
+        normalized_columns=normalized_columns,
     )
