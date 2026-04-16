@@ -127,7 +127,7 @@ def run_correlation_scan(
             if pair_count < 2:
                 continue
 
-            corr = correlation_value(table.df[col_a], table.df[col_b])
+            corr = correlation_value(pair["a"], pair["b"])
             if corr is None:
                 continue
 
