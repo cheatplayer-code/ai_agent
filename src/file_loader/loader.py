@@ -45,16 +45,16 @@ def load_table(
         file_type = "csv"
         resolved_sheet_name: str | None = None
     elif suffix == ".xlsx":
-        try:
-            df = pd.read_excel(
-                source_path,
-                sheet_name=sheet_name if sheet_name is not None else 0,
-                engine="openpyxl",
-            )
-        except ValueError as exc:
-            if sheet_name is not None and "Worksheet" in str(exc):
-                raise ValueError(f"Sheet not found: {sheet_name}") from exc
-            raise
+        if sheet_name is not None:
+            with pd.ExcelFile(source_path, engine="openpyxl") as workbook:
+                if sheet_name not in workbook.sheet_names:
+                    raise ValueError(f"Sheet not found: {sheet_name}")
+
+        df = pd.read_excel(
+            source_path,
+            sheet_name=sheet_name if sheet_name is not None else 0,
+            engine="openpyxl",
+        )
 
         file_type = "xlsx"
         resolved_sheet_name = str(sheet_name) if sheet_name is not None else None
