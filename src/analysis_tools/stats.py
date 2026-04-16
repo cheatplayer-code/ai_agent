@@ -79,6 +79,8 @@ def correlation_value(series_a: pd.Series, series_b: pd.Series) -> float | None:
     pair = pd.DataFrame({"a": a, "b": b}).dropna()
     if pair.shape[0] < 2:
         return None
+    if pair["a"].nunique() < 2 or pair["b"].nunique() < 2:
+        return None
 
     corr = pair["a"].corr(pair["b"], method="pearson")
     if corr is None:
