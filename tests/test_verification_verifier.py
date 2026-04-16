@@ -178,7 +178,7 @@ def test_outliers_present_verified_correctly() -> None:
 
 def test_strong_correlation_verified_correctly() -> None:
     suite = verify_claims(
-        claims=[_claim("c1", "strong_correlation")],
+        claims=[_claim("auto_claim_1_strong_correlation", "strong_correlation")],
         evidence=[
             {
                 "evidence_id": "correlation_scan:x:y",
