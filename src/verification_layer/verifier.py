@@ -51,6 +51,7 @@ def _info_result(
 
 
 def _as_dict(value: Any) -> dict[str, Any]:
+    """Return the input when dict-shaped, otherwise a deterministic empty mapping."""
     return value if isinstance(value, dict) else {}
 
 
@@ -76,7 +77,7 @@ def _verify_high_missingness(claim: InsightClaim, evidence: list[dict[str, Any]]
             "Missing required evidence: missing_values.",
         )
 
-    observed_max: float | None = None
+    observed_max_ratio: float | None = None
     observed_refs: list[str] = []
     for item in candidates:
         value = item.get("value")
@@ -93,23 +94,25 @@ def _verify_high_missingness(claim: InsightClaim, evidence: list[dict[str, Any]]
         if ref:
             observed_refs.append(ref)
         if ratio is not None:
-            observed_max = ratio if observed_max is None else max(observed_max, ratio)
+            observed_max_ratio = (
+                ratio if observed_max_ratio is None else max(observed_max_ratio, ratio)
+            )
 
-    if observed_max is None:
+    if observed_max_ratio is None:
         return _warning_result(
             claim.claim_id,
             "Missing required missing_ratio value in missing_values evidence.",
             evidence_refs=observed_refs,
         )
 
-    if observed_max >= HIGH_MISSINGNESS_RATIO_THRESHOLD:
+    if observed_max_ratio >= HIGH_MISSINGNESS_RATIO_THRESHOLD:
         return _info_result(
             claim.claim_id,
             "Missingness threshold met.",
             evidence_refs=observed_refs,
             details={
                 "threshold": HIGH_MISSINGNESS_RATIO_THRESHOLD,
-                "observed_missing_ratio": observed_max,
+                "observed_missing_ratio": observed_max_ratio,
             },
         )
 
@@ -119,7 +122,7 @@ def _verify_high_missingness(claim: InsightClaim, evidence: list[dict[str, Any]]
         evidence_refs=observed_refs,
         details={
             "threshold": HIGH_MISSINGNESS_RATIO_THRESHOLD,
-            "observed_missing_ratio": observed_max,
+            "observed_missing_ratio": observed_max_ratio,
         },
     )
 
@@ -132,14 +135,14 @@ def _verify_outliers_present(claim: InsightClaim, evidence: list[dict[str, Any]]
             "Missing required evidence: outlier_summary.",
         )
 
-    observed_max = 0
+    observed_max_count = 0
     matched_columns: list[str] = []
     refs: list[str] = []
     for item in candidates:
         value = _as_dict(item.get("value"))
         outlier_count = value.get("outlier_count")
         if isinstance(outlier_count, int):
-            observed_max = max(observed_max, outlier_count)
+            observed_max_count = max(observed_max_count, outlier_count)
             if outlier_count > 0:
                 column_name = _as_dict(item.get("details")).get("column_name")
                 if isinstance(column_name, str):
@@ -148,19 +151,22 @@ def _verify_outliers_present(claim: InsightClaim, evidence: list[dict[str, Any]]
         if ref:
             refs.append(ref)
 
-    if observed_max > 0:
+    if observed_max_count > 0:
         return _info_result(
             claim.claim_id,
             "Outliers detected.",
             evidence_refs=refs,
-            details={"observed_outlier_count": observed_max, "matched_columns": matched_columns},
+            details={
+                "observed_outlier_count": observed_max_count,
+                "matched_columns": matched_columns,
+            },
         )
 
     return _warning_result(
         claim.claim_id,
         "Outlier threshold not met (outlier_count <= 0).",
         evidence_refs=refs,
-        details={"observed_outlier_count": observed_max},
+        details={"observed_outlier_count": observed_max_count},
     )
 
 
