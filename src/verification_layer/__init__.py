@@ -1,0 +1,29 @@
+"""Public API for deterministic Phase 3B verification layer."""
+
+from src.verification_layer.claims import (
+    CLAIM_SPECS,
+    CLAIM_TYPE_DATE_RANGE_PRESENT,
+    CLAIM_TYPE_HIGH_CARDINALITY_PRESENT,
+    CLAIM_TYPE_HIGH_MISSINGNESS,
+    CLAIM_TYPE_OUTLIERS_PRESENT,
+    CLAIM_TYPE_STRONG_CORRELATION,
+    HIGH_MISSINGNESS_RATIO_THRESHOLD,
+    STRONG_CORRELATION_ABS_THRESHOLD,
+    SUPPORTED_CLAIM_TYPES,
+    is_supported_claim_type,
+)
+from src.verification_layer.verifier import verify_claims
+
+__all__ = [
+    "CLAIM_SPECS",
+    "CLAIM_TYPE_DATE_RANGE_PRESENT",
+    "CLAIM_TYPE_HIGH_CARDINALITY_PRESENT",
+    "CLAIM_TYPE_HIGH_MISSINGNESS",
+    "CLAIM_TYPE_OUTLIERS_PRESENT",
+    "CLAIM_TYPE_STRONG_CORRELATION",
+    "HIGH_MISSINGNESS_RATIO_THRESHOLD",
+    "STRONG_CORRELATION_ABS_THRESHOLD",
+    "SUPPORTED_CLAIM_TYPES",
+    "is_supported_claim_type",
+    "verify_claims",
+]
