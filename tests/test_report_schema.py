@@ -124,7 +124,7 @@ def test_issue_json_serializable() -> None:
 
 def test_issue_legacy_id_rejected() -> None:
     with pytest.raises(ValidationError):
-        Issue(**_minimal_issue(issue_id=None, id="legacy"))
+        Issue(**_minimal_issue(id="legacy"))
 
 
 def test_issue_extra_field_rejected() -> None:
