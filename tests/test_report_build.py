@@ -195,6 +195,7 @@ def test_evidence_dicts_become_evidence_items() -> None:
     assert isinstance(report.evidence[0], EvidenceItem)
     assert report.evidence[0].evidence_id == "ev-1"
     assert report.evidence[0].details == {"column_name": "a"}
+    assert report.evidence[1].evidence_id == "ev-2"
     assert report.evidence[1].details == {}
 
 
