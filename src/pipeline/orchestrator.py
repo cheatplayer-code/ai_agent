@@ -77,4 +77,5 @@ def run_pipeline(
         verification=verification,
         plan=plan,
         product_output=product_output,
+        dominant_mode=profile.get("dominant_mode"),
     )

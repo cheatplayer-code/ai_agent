@@ -250,3 +250,19 @@ def test_report_contains_product_facing_output_fields() -> None:
     assert report.key_findings == ["Strong correlation detected between a and b."]
     assert report.recommendations == ["Investigate the strong numeric relationship between a and b."]
     assert report.skipped_tools == ["date_coverage: skipped because no datetime columns were detected."]
+    assert report.file_name == "sample.csv"
+    assert report.analysis_mode_label == "General Tabular Analysis"
+    assert report.data_quality_score == 78
+    assert report.main_finding == "Outliers exist"
+    assert report.top_issue == "error"
+    assert report.confidence_level == "low"
+    assert report.confidence_reason
+    assert report.chart_specs
+    assert report.chart_specs[0]["chart_type"] == "metric_cards"
+    assert report.export_state == {
+        "summary_ready": True,
+        "insights_generated": True,
+        "quality_issues_detected": True,
+        "charts_prepared": True,
+        "export_available": True,
+    }
