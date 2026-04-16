@@ -167,5 +167,7 @@ def infer_column_type(series: pd.Series) -> tuple[str, float]:
     if is_datetime:
         return "datetime", datetime_conf
 
+    # String fallback confidence is inverse to strongest non-string signal:
+    # stronger alternative-type evidence => lower string confidence.
     strongest_alt = max(bool_conf, int_conf, float_conf, datetime_conf)
     return "string", _clamp_confidence(1.0 - strongest_alt)
