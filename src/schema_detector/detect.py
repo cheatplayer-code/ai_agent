@@ -17,11 +17,12 @@ LOW_CONFIDENCE_THRESHOLD = 0.6
 
 
 def detect_schema(table: TableArtifact, policy: ExecutionPolicy) -> DetectedSchema:
-    """Infer deterministic schema from sampled rows."""
+    """Infer deterministic schema from sample-based row materialization."""
     sampled_df = materialize_sample(df=table.df, policy=policy)
     columns: list[ColumnSchema] = []
     notes: list[str] = []
 
+    # Phase 2A type/stats inference is intentionally based on sampled rows.
     if len(sampled_df) != len(table.df):
         notes.append("schema inferred from sampled rows")
 
