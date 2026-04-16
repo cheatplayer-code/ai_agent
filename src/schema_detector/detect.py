@@ -13,6 +13,8 @@ from src.schema_detector.rules import (
     unique_stats,
 )
 
+LOW_CONFIDENCE_THRESHOLD = 0.6
+
 
 def detect_schema(table: TableArtifact, policy: ExecutionPolicy) -> DetectedSchema:
     """Infer deterministic schema from sampled rows."""
@@ -45,7 +47,7 @@ def detect_schema(table: TableArtifact, policy: ExecutionPolicy) -> DetectedSche
 
         if non_null_count == 0:
             notes.append(f"column {column_name} had only null values")
-        elif confidence < 0.6:
+        elif confidence < LOW_CONFIDENCE_THRESHOLD:
             notes.append(f"low confidence type inference for column {column_name}")
 
     return DetectedSchema(columns=columns, sampled_rows=len(sampled_df), notes=notes)
