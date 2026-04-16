@@ -75,6 +75,7 @@ def _verified_date_range_claim(
 def _find_verified_correlation_pair(
     claim: InsightClaim,
     verification: VerificationSuiteResult | None,
+    evidence: list[EvidenceItem],
 ) -> tuple[str, str] | None:
     if verification is None:
         return None
@@ -91,10 +92,45 @@ def _find_verified_correlation_pair(
         col_b = first_pair.get("col_b")
         if isinstance(col_a, str) and isinstance(col_b, str):
             return col_a, col_b
+    for item in evidence:
+        if item.metric_name != "pearson_correlation":
+            continue
+        col_a = item.details.get("col_a")
+        col_b = item.details.get("col_b")
+        if isinstance(col_a, str) and isinstance(col_b, str):
+            return col_a, col_b
     return None
 
 
-def _find_date_coverage_range(evidence: list[EvidenceItem]) -> tuple[str, str] | None:
+def _find_date_coverage_range(
+    claim: InsightClaim,
+    verification: VerificationSuiteResult | None,
+    evidence: list[EvidenceItem],
+) -> tuple[str, str] | None:
+    matched_columns: set[str] = set()
+    if verification is not None:
+        for result in verification.results:
+            if result.claim_id != claim.claim_id or not result.verified:
+                continue
+            result_columns = result.details.get("matched_columns")
+            if isinstance(result_columns, list):
+                matched_columns = {col for col in result_columns if isinstance(col, str)}
+            break
+
+    if matched_columns:
+        for item in evidence:
+            if item.metric_name != "date_coverage":
+                continue
+            column_name = item.details.get("column_name")
+            if not isinstance(column_name, str) or column_name not in matched_columns:
+                continue
+            if not isinstance(item.value, dict):
+                continue
+            min_date = item.value.get("min_date")
+            max_date = item.value.get("max_date")
+            if isinstance(min_date, str) and isinstance(max_date, str):
+                return min_date, max_date
+
     for item in evidence:
         if item.metric_name != "date_coverage":
             continue
@@ -117,14 +153,22 @@ def _main_finding(
 ) -> str:
     strong_corr = _verified_strong_correlation_claim(claims=claims, verification=verification)
     if strong_corr is not None:
-        pair = _find_verified_correlation_pair(claim=strong_corr, verification=verification)
+        pair = _find_verified_correlation_pair(
+            claim=strong_corr,
+            verification=verification,
+            evidence=evidence,
+        )
         if pair is not None:
             return f"A strong correlation was detected between {pair[0]} and {pair[1]}."
         return strong_corr.statement
 
     verified_date_range = _verified_date_range_claim(claims=claims, verification=verification)
     if verified_date_range is not None:
-        date_range = _find_date_coverage_range(evidence=evidence)
+        date_range = _find_date_coverage_range(
+            claim=verified_date_range,
+            verification=verification,
+            evidence=evidence,
+        )
         if date_range is not None:
             return f"Valid date coverage was detected from {date_range[0]} to {date_range[1]}."
         return verified_date_range.statement
@@ -158,6 +202,7 @@ def _confidence_fields(
     dominant_mode: str | None,
 ) -> tuple[str, str]:
     verified_claim_count = len(_verified_claims(claims=claims, verification=verification))
+    strong_corr = _verified_strong_correlation_claim(claims=claims, verification=verification)
     error_count = sum(1 for issue in issues if issue.severity == Severity.ERROR)
     warning_count = sum(1 for issue in issues if issue.severity == Severity.WARNING)
     has_verification = verification is not None
@@ -169,15 +214,20 @@ def _confidence_fields(
 
     if (
         has_verification
+        and strong_corr is not None
+        and verified_claim_count == 1
+        and error_count == 0
+    ):
+        return "high", "A verified strong correlation was found and no critical quality issues were detected."
+
+    if (
+        has_verification
         and verified_claim_count >= 1
         and error_count == 0
         and (warning_count == 0 or verified_claim_count >= 2)
     ):
         if verified_claim_count >= 2:
             return "high", "Multiple verified insights were produced with no critical quality issues."
-        strong_corr = _verified_strong_correlation_claim(claims=claims, verification=verification)
-        if strong_corr is not None:
-            return "high", "A verified strong correlation was found and no data quality issues were detected."
         return "high", "Verified insights were produced and no data quality issues were detected."
 
     if verified_claim_count >= 1 and warning_count > 0:
