@@ -101,7 +101,7 @@ def test_ui_contract_fields_for_temporal_verified_dataset() -> None:
             details={"column_name": "revenue"},
         ),
     ]
-    issues = [_issue("i1", Severity.WARNING, "DUPLICATE_ROWS", "Duplicate rows detected")]
+    issues: list[Issue] = []
 
     ui = generate_ui_contract_fields(
         source_path="/tmp/example/sales.csv",
@@ -116,10 +116,16 @@ def test_ui_contract_fields_for_temporal_verified_dataset() -> None:
 
     assert ui["file_name"] == "sales.csv"
     assert ui["analysis_mode_label"] == "Temporal Analysis"
-    assert ui["data_quality_score"] == 90
-    assert ui["main_finding"] == "Strong correlation exists between revenue and cost."
-    assert ui["top_issue"] == "Duplicate rows detected"
+    assert ui["data_quality_score"] == 100
+    assert ui["main_finding"] == "A strong correlation was detected between revenue and cost."
+    assert "revenue" in ui["main_finding"]
+    assert "cost" in ui["main_finding"]
+    assert ui["top_issue"] is None
     assert ui["confidence_level"] == "high"
+    assert (
+        ui["confidence_reason"]
+        == "Multiple verified insights were produced with no critical quality issues."
+    )
     assert ui["confidence_level"] in {"high", "medium", "low"}
     assert isinstance(ui["data_quality_score"], int)
     assert len(ui["chart_specs"]) <= 3
@@ -130,7 +136,7 @@ def test_ui_contract_fields_for_temporal_verified_dataset() -> None:
     assert isinstance(ui["export_state"]["quality_issues_detected"], int)
     assert isinstance(ui["export_state"]["charts_prepared"], int)
     assert ui["export_state"]["insights_generated"] == 1
-    assert ui["export_state"]["quality_issues_detected"] == 1
+    assert ui["export_state"]["quality_issues_detected"] == 0
     assert ui["export_state"]["charts_prepared"] == len(ui["chart_specs"])
     assert ui["export_state"]["export_available"] is True
 
@@ -152,8 +158,9 @@ def test_ui_contract_confidence_low_and_fallback_main_finding() -> None:
 
     assert ui["analysis_mode_label"] == "Data Quality First"
     assert ui["data_quality_score"] == 78
-    assert ui["main_finding"] == "Fallback summary sentence."
+    assert ui["main_finding"] == "Data quality attention needed: Missing values found"
     assert ui["confidence_level"] == "low"
+    assert ui["confidence_reason"] == "Confidence is limited because multiple data quality issues were detected."
     assert ui["chart_specs"] == [
         {
             "chart_type": "metric_cards",
@@ -164,3 +171,134 @@ def test_ui_contract_confidence_low_and_fallback_main_finding() -> None:
             "series_field": None,
         }
     ]
+
+
+def test_ui_contract_temporal_main_finding_includes_date_range_when_verified() -> None:
+    claims = [
+        InsightClaim(
+            claim_id="c-date",
+            claim_type="date_range_present",
+            statement="Date range claim.",
+            evidence_refs=[],
+            confidence=None,
+        )
+    ]
+    verification = VerificationSuiteResult(
+        success=True,
+        results=[
+            VerificationResult(
+                claim_id="c-date",
+                verified=True,
+                severity=Severity.INFO,
+                reason="ok",
+                evidence_refs=[],
+                details={},
+            )
+        ],
+        meta={},
+    )
+    evidence = [
+        EvidenceItem(
+            evidence_id="ev-date",
+            source="analysis_tools.date_coverage",
+            metric_name="date_coverage",
+            value={"min_date": "2026-02-01", "max_date": "2026-03-01"},
+            details={"column_name": "event_date"},
+        )
+    ]
+
+    ui = generate_ui_contract_fields(
+        source_path="/tmp/example/dates.csv",
+        dominant_mode="temporal",
+        issues=[],
+        verification=verification,
+        claims=claims,
+        key_findings=[],
+        executive_summary="Temporal summary",
+        evidence=evidence,
+    )
+
+    assert (
+        ui["main_finding"]
+        == "Valid date coverage was detected from 2026-02-01 to 2026-03-01."
+    )
+
+
+def test_ui_contract_confidence_medium_with_verified_claim_and_warning() -> None:
+    claims = [
+        InsightClaim(
+            claim_id="c1",
+            claim_type="strong_correlation",
+            statement="Strong correlation exists.",
+            evidence_refs=[],
+            confidence=None,
+        )
+    ]
+    verification = VerificationSuiteResult(
+        success=True,
+        results=[
+            VerificationResult(
+                claim_id="c1",
+                verified=True,
+                severity=Severity.INFO,
+                reason="ok",
+                evidence_refs=[],
+                details={"matched_pairs": [{"col_a": "x_value", "col_b": "y_value"}]},
+            )
+        ],
+        meta={},
+    )
+    ui = generate_ui_contract_fields(
+        source_path="/tmp/example/warn.csv",
+        dominant_mode="numeric",
+        issues=[_issue("w1", Severity.WARNING, "DUPLICATE_ROWS", "Duplicate rows detected")],
+        verification=verification,
+        claims=claims,
+        key_findings=[],
+        executive_summary="Summary",
+        evidence=[],
+    )
+
+    assert ui["confidence_level"] == "medium"
+    assert ui["confidence_reason"] == "Verified insights exist, but warning-level quality issues reduce confidence."
+
+
+def test_ui_contract_is_deterministic_for_identical_inputs() -> None:
+    claims = [
+        InsightClaim(
+            claim_id="c1",
+            claim_type="strong_correlation",
+            statement="Strong correlation exists.",
+            evidence_refs=[],
+            confidence=None,
+        )
+    ]
+    verification = VerificationSuiteResult(
+        success=True,
+        results=[
+            VerificationResult(
+                claim_id="c1",
+                verified=True,
+                severity=Severity.INFO,
+                reason="ok",
+                evidence_refs=[],
+                details={"matched_pairs": [{"col_a": "x_value", "col_b": "y_value"}]},
+            )
+        ],
+        meta={},
+    )
+    args = dict(
+        source_path="/tmp/example/sample.csv",
+        dominant_mode="numeric",
+        issues=[],
+        verification=verification,
+        claims=claims,
+        key_findings=[],
+        executive_summary="Summary",
+        evidence=[],
+    )
+
+    first = generate_ui_contract_fields(**args)
+    second = generate_ui_contract_fields(**args)
+
+    assert first == second
