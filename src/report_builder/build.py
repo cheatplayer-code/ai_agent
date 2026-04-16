@@ -74,7 +74,7 @@ def build_analysis_report(
             column_count=table.column_count,
             normalized_columns=table.normalized_columns,
         ),
-        schema=schema,
+        detected_schema=schema,
         dq_suite=dq_suite,
         evidence=evidence_items,
         claims=claims,
