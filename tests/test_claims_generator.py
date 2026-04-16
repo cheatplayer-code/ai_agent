@@ -87,7 +87,7 @@ def test_high_missingness_generates_when_derived_ratio_meets_threshold() -> None
                 confidence=1.0,
             ),
         ],
-        sampled_rows=2,
+        sampled_rows=1,
         notes=[],
     )
     dq_suite = SuiteResult(
