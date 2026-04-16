@@ -274,7 +274,7 @@ def generate_ui_contract_fields(
         evidence=evidence,
     )
     summary_ready = bool(executive_summary.strip()) if executive_summary else False
-    quality_issues_detected = len(issues)
+    quality_issues_detected = min(len(issues), 1)
     insights_generated = len(key_findings) if key_findings else len(claims)
     charts_prepared = len(chart_specs)
 
