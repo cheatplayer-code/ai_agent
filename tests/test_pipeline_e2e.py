@@ -157,6 +157,26 @@ def test_empty_claims_produce_successful_zero_claim_verification_suite() -> None
     assert report.verification.results == []
 
 
+def test_pipeline_model_dump_contains_required_ui_runtime_fields() -> None:
+    report = run_pipeline(
+        source_path=str(FIXTURES_DIR / "correlation.csv"),
+        policy=ExecutionPolicy(),
+        sheet_name=None,
+        claims=None,
+    )
+    payload = report.model_dump()
+    for key in [
+        "file_name",
+        "analysis_mode_label",
+        "data_quality_score",
+        "main_finding",
+        "confidence_level",
+        "chart_specs",
+        "export_state",
+    ]:
+        assert key in payload
+
+
 def test_pipeline_output_is_json_serializable() -> None:
     report = run_pipeline(
         source_path=str(FIXTURES_DIR / "sample.xlsx"),

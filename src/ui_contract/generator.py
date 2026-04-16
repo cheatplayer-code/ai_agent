@@ -274,9 +274,9 @@ def generate_ui_contract_fields(
         evidence=evidence,
     )
     summary_ready = bool(executive_summary.strip()) if executive_summary else False
-    quality_issues_detected = bool(issues)
-    insights_generated = bool(key_findings) or bool(claims)
-    charts_prepared = bool(chart_specs)
+    quality_issues_detected = len(issues)
+    insights_generated = len(key_findings) if key_findings else len(claims)
+    charts_prepared = len(chart_specs)
 
     confidence_level, confidence_reason = _confidence_fields(
         verification=verification,
@@ -304,6 +304,6 @@ def generate_ui_contract_fields(
             "insights_generated": insights_generated,
             "quality_issues_detected": quality_issues_detected,
             "charts_prepared": charts_prepared,
-            "export_available": summary_ready and insights_generated and charts_prepared,
+            "export_available": summary_ready and insights_generated > 0 and charts_prepared > 0,
         },
     }

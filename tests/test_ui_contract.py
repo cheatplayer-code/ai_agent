@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
+
 from src.core.enums import IssueCategory, Severity
 from src.report_builder.schema import (
+    AnalysisReport,
     EvidenceItem,
     InsightClaim,
     Issue,
@@ -12,6 +15,22 @@ from src.report_builder.schema import (
     VerificationSuiteResult,
 )
 from src.ui_contract.generator import generate_ui_contract_fields
+
+
+def test_analysis_report_model_fields_include_required_ui_contract_fields() -> None:
+    required = {
+        "file_name",
+        "analysis_mode_label",
+        "data_quality_score",
+        "main_finding",
+        "top_issue",
+        "confidence_level",
+        "confidence_reason",
+        "chart_specs",
+        "export_state",
+    }
+    fields = set(AnalysisReport.model_fields.keys())
+    assert required.issubset(fields)
 
 
 def _issue(issue_id: str, severity: Severity, code: str, message: str) -> Issue:
@@ -101,9 +120,18 @@ def test_ui_contract_fields_for_temporal_verified_dataset() -> None:
     assert ui["main_finding"] == "Strong correlation exists between revenue and cost."
     assert ui["top_issue"] == "Duplicate rows detected"
     assert ui["confidence_level"] == "high"
+    assert ui["confidence_level"] in {"high", "medium", "low"}
+    assert isinstance(ui["data_quality_score"], int)
     assert len(ui["chart_specs"]) <= 3
     assert ui["chart_specs"][0]["chart_type"] == "metric_cards"
+    json.dumps(ui["chart_specs"])
     assert ui["export_state"]["summary_ready"] is True
+    assert isinstance(ui["export_state"]["insights_generated"], int)
+    assert isinstance(ui["export_state"]["quality_issues_detected"], int)
+    assert isinstance(ui["export_state"]["charts_prepared"], int)
+    assert ui["export_state"]["insights_generated"] == 1
+    assert ui["export_state"]["quality_issues_detected"] == 1
+    assert ui["export_state"]["charts_prepared"] == len(ui["chart_specs"])
     assert ui["export_state"]["export_available"] is True
 
 
