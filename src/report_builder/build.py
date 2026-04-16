@@ -41,6 +41,12 @@ def _flatten_issues(dq_suite: SuiteResult | None) -> list[Issue]:
     return issues
 
 
+def _as_str_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item) for item in value if isinstance(item, str)]
+
+
 def build_analysis_report(
     table: TableArtifact,
     policy: ExecutionPolicy,
@@ -50,6 +56,7 @@ def build_analysis_report(
     claims: list[InsightClaim],
     verification: VerificationSuiteResult | None,
     plan: Plan | None = None,
+    product_output: dict[str, Any] | None = None,
 ) -> AnalysisReport:
     """Build a deterministic, frozen AnalysisReport from pipeline outputs."""
     evidence_items = [_to_evidence_item(row) for row in evidence]
@@ -62,6 +69,8 @@ def build_analysis_report(
         if verification is not None
         else 0
     )
+
+    product = product_output or {}
 
     return AnalysisReport(
         generated_at=None,
@@ -80,6 +89,12 @@ def build_analysis_report(
         claims=claims,
         verification=verification,
         plan=plan,
+        dataset_kind=str(product.get("dataset_kind", "generic_tabular")),
+        selected_path_reason=str(product.get("selected_path_reason", "")),
+        executive_summary=str(product.get("executive_summary", "")),
+        key_findings=_as_str_list(product.get("key_findings")),
+        recommendations=_as_str_list(product.get("recommendations")),
+        skipped_tools=_as_str_list(product.get("skipped_tools")),
         summary=AnalysisSummary(
             rows=table.row_count,
             columns=table.column_count,
