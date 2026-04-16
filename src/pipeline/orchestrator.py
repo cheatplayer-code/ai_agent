@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from src.analysis_tools.runner import run_analysis_tools
+from src.agent_profile.profile import build_dataset_profile
+from src.analysis_tools.runner import run_analysis_tools, select_analysis_tools
+from src.claims_generator.generator import generate_claims
 from src.core.policy import ExecutionPolicy
 from src.data_quality_checker.runner import run_dq_suite
 from src.file_loader.loader import load_table
@@ -21,18 +23,38 @@ def run_pipeline(
     claims: list[InsightClaim] | None = None,
 ) -> AnalysisReport:
     """Run deterministic pipeline phases and return final AnalysisReport."""
-    claim_list = claims or []
-    plan = generate_plan(
-        source_path=source_path,
-        claims_provided=bool(claim_list),
-        sheet_name=sheet_name,
-    )
-    validate_plan(plan)
-
     table = load_table(source_path=source_path, policy=policy, sheet_name=sheet_name)
     schema = detect_schema(table=table, policy=policy)
     dq_suite = run_dq_suite(table=table, schema=schema, policy=policy)
-    evidence = run_analysis_tools(table=table, schema=schema, policy=policy)
+    profile = build_dataset_profile(table=table, schema=schema, dq_suite=dq_suite)
+
+    selected_tool_ids = select_analysis_tools(
+        table=table,
+        schema=schema,
+        profile=profile,
+    )
+
+    plan = generate_plan(
+        source_path=source_path,
+        claims_provided=claims is not None,
+        sheet_name=sheet_name,
+        dominant_mode=profile.get("dominant_mode"),
+        selected_tool_ids=selected_tool_ids,
+    )
+    validate_plan(plan)
+
+    evidence = run_analysis_tools(table=table, schema=schema, policy=policy, profile=profile)
+
+    if claims is None:
+        claim_list = generate_claims(
+            table=table,
+            schema=schema,
+            dq_suite=dq_suite,
+            evidence=evidence,
+            profile=profile,
+        )
+    else:
+        claim_list = claims
 
     verification = verify_claims(claims=claim_list, evidence=evidence, dq_suite=dq_suite)
 

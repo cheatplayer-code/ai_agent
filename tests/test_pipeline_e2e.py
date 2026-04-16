@@ -56,6 +56,30 @@ def test_repeated_runs_produce_identical_report_payloads(
     assert first.model_dump(mode="json") == second.model_dump(mode="json")
 
 
+@pytest.mark.parametrize(
+    ("fixture_name", "sheet_name", "expected_claim_type"),
+    [
+        ("correlation.csv", None, "strong_correlation"),
+        ("dates.xlsx", None, "date_range_present"),
+        ("dirty.csv", None, "high_missingness"),
+    ],
+)
+def test_pipeline_with_auto_claims_generates_non_empty_claims_for_supported_signals(
+    fixture_name: str,
+    sheet_name: str | None,
+    expected_claim_type: str,
+) -> None:
+    report = run_pipeline(
+        source_path=str(FIXTURES_DIR / fixture_name),
+        policy=ExecutionPolicy(),
+        sheet_name=sheet_name,
+        claims=None,
+    )
+
+    assert report.claims
+    assert expected_claim_type in [claim.claim_type for claim in report.claims]
+
+
 def test_pipeline_output_structure_and_summary_consistency() -> None:
     report = run_pipeline(
         source_path=str(FIXTURES_DIR / "sample.csv"),

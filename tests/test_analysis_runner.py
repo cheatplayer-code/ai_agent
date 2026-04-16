@@ -6,6 +6,7 @@ import json
 
 import pandas as pd
 
+from src.agent_profile.profile import build_dataset_profile
 from src.analysis_tools.runner import run_analysis_tools
 from src.core.policy import ExecutionPolicy
 from src.core.types import TableArtifact
@@ -52,11 +53,101 @@ def test_runner_output_is_deterministic() -> None:
     table = _table(df)
     schema = _schema([("name", "string"), ("amount", "float"), ("event_date", "datetime")])
     policy = ExecutionPolicy()
+    profile = build_dataset_profile(table=table, schema=schema)
 
-    first = run_analysis_tools(table=table, schema=schema, policy=policy)
-    second = run_analysis_tools(table=table, schema=schema, policy=policy)
+    first = run_analysis_tools(table=table, schema=schema, policy=policy, profile=profile)
+    second = run_analysis_tools(table=table, schema=schema, policy=policy, profile=profile)
 
     assert first == second
+
+
+def test_runner_excludes_id_like_columns_from_numeric_relational_analysis() -> None:
+    df = pd.DataFrame(
+        {
+            "order_id": [101, 102, 103, 104, 105, 106],
+            "x": [1, 2, 3, 4, 5, 6],
+            "y": [2, 4, 6, 8, 10, 12],
+        }
+    )
+    table = _table(df)
+    schema = DetectedSchema(
+        columns=[
+            ColumnSchema(
+                name="order_id",
+                detected_type="integer",
+                nullable=False,
+                unique_count=6,
+                unique_ratio=1.0,
+                non_null_count=6,
+                confidence=1.0,
+            ),
+            ColumnSchema(
+                name="x",
+                detected_type="integer",
+                nullable=False,
+                unique_count=6,
+                unique_ratio=1.0,
+                non_null_count=6,
+                confidence=1.0,
+            ),
+            ColumnSchema(
+                name="y",
+                detected_type="integer",
+                nullable=False,
+                unique_count=6,
+                unique_ratio=1.0,
+                non_null_count=6,
+                confidence=1.0,
+            ),
+        ],
+        sampled_rows=6,
+        notes=[],
+    )
+    profile = build_dataset_profile(table=table, schema=schema)
+
+    evidence = run_analysis_tools(
+        table=table,
+        schema=schema,
+        policy=ExecutionPolicy(),
+        profile=profile,
+    )
+
+    numeric_columns = {
+        row["details"]["column_name"]
+        for row in evidence
+        if row["metric_name"] in {"numeric_summary", "iqr_outlier_summary"}
+    }
+    correlation_pairs = {
+        (row["details"]["col_a"], row["details"]["col_b"])
+        for row in evidence
+        if row["metric_name"] == "pearson_correlation"
+    }
+
+    assert "order_id" not in numeric_columns
+    assert all("order_id" not in pair for pair in correlation_pairs)
+
+
+def test_runner_skips_frequency_for_all_null_columns() -> None:
+    df = pd.DataFrame(
+        {
+            "all_null": [None, None, None, None, None],
+            "status": ["a", "a", "b", "b", "a"],
+        }
+    )
+    table = _table(df)
+    schema = _schema([("all_null", "string"), ("status", "string")])
+    profile = build_dataset_profile(table=table, schema=schema)
+
+    evidence = run_analysis_tools(
+        table=table,
+        schema=schema,
+        policy=ExecutionPolicy(),
+        profile=profile,
+    )
+
+    evidence_ids = [row["evidence_id"] for row in evidence]
+    assert "column_frequency:all_null" not in evidence_ids
+    assert "column_frequency:status" in evidence_ids
 
 
 def test_runner_evidence_shape_and_json_serializable() -> None:
@@ -64,8 +155,9 @@ def test_runner_evidence_shape_and_json_serializable() -> None:
     table = _table(df)
     schema = _schema([("x", "integer"), ("y", "float")])
     policy = ExecutionPolicy()
+    profile = build_dataset_profile(table=table, schema=schema)
 
-    evidence = run_analysis_tools(table=table, schema=schema, policy=policy)
+    evidence = run_analysis_tools(table=table, schema=schema, policy=policy, profile=profile)
 
     assert evidence
     for row in evidence:
