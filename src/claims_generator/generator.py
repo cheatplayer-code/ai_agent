@@ -94,13 +94,11 @@ def _has_high_missingness(dq_suite: SuiteResult | None) -> tuple[bool, list[str]
                 else max(observed_max_ratio, derived_from_metrics)
             )
 
-        matching_issue_refs = [issue.issue_id for issue in result.issues if issue.code == "MISSING_VALUES"]
-        if matching_issue_refs:
-            refs.extend(matching_issue_refs)
+        missing_value_issues = [issue for issue in result.issues if issue.code == "MISSING_VALUES"]
+        if missing_value_issues:
+            refs.extend(issue.issue_id for issue in missing_value_issues)
 
-        for issue in result.issues:
-            if issue.code != "MISSING_VALUES":
-                continue
+        for issue in missing_value_issues:
             issue_ratio = _derive_missing_ratio_from_mapping(issue.details)
             if issue_ratio is not None:
                 observed_max_ratio = (
