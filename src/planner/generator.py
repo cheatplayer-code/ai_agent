@@ -3,28 +3,19 @@
 from __future__ import annotations
 
 from src.planner.dsl import (
-    ALLOWED_STEP_TYPES,
+    STEP_TYPE_BUILD_DATASET_PROFILE,
     STEP_TYPE_BUILD_REPORT,
     STEP_TYPE_DETECT_SCHEMA,
+    STEP_TYPE_GENERATE_CLAIMS,
     STEP_TYPE_LOAD_TABLE,
     STEP_TYPE_RUN_ANALYSIS_TOOLS,
     STEP_TYPE_RUN_DQ_SUITE,
+    STEP_TYPE_SELECT_TOOLS,
     STEP_TYPE_VERIFY_CLAIMS,
     make_plan,
     make_plan_step,
 )
 from src.report_builder.schema import Plan
-
-STEP_TYPE_BUILD_DATASET_PROFILE = "build_dataset_profile"
-STEP_TYPE_SELECT_TOOLS = "select_tools"
-STEP_TYPE_GENERATE_CLAIMS = "generate_claims"
-ALLOWED_STEP_TYPES.update(
-    {
-        STEP_TYPE_BUILD_DATASET_PROFILE,
-        STEP_TYPE_SELECT_TOOLS,
-        STEP_TYPE_GENERATE_CLAIMS,
-    }
-)
 
 
 def generate_plan(
@@ -36,6 +27,7 @@ def generate_plan(
 ) -> Plan:
     """Generate a deterministic v2 plan for the pipeline."""
     selected_ids = selected_tool_ids or []
+    auto_claims_enabled = not claims_provided
 
     steps = [
         make_plan_step(
@@ -74,7 +66,10 @@ def generate_plan(
         make_plan_step(
             step_id="step_7_generate_claims",
             step_type=STEP_TYPE_GENERATE_CLAIMS,
-            params={"auto_claims_enabled": True, "claims_provided": claims_provided},
+            params={
+                "auto_claims_enabled": auto_claims_enabled,
+                "claims_provided": claims_provided,
+            },
             depends_on=["step_6_run_analysis_tools"],
         ),
         make_plan_step(
@@ -100,7 +95,7 @@ def generate_plan(
                 "claims_provided": claims_provided,
                 "dominant_mode": dominant_mode,
                 "selected_tool_ids": selected_ids,
-                "auto_claims_enabled": True,
+                "auto_claims_enabled": auto_claims_enabled,
             }
         }
     )

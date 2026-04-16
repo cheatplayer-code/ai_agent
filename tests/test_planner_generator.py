@@ -64,10 +64,12 @@ def test_generate_plan_includes_expected_params_and_meta() -> None:
     load_step = plan.steps[0]
     select_step = plan.steps[4]
     verify_step = plan.steps[7]
+    generate_claims_step = plan.steps[6]
 
     assert load_step.params["source_path"] == "data/sample.csv"
     assert load_step.params["sheet_name"] == 1
     assert select_step.params["selected_tool_ids"] == ["column_frequency", "numeric_summary"]
+    assert generate_claims_step.params["auto_claims_enabled"] is False
     assert verify_step.params["claims_provided"] is True
     assert plan.meta == {
         "source_path": "data/sample.csv",
@@ -75,5 +77,5 @@ def test_generate_plan_includes_expected_params_and_meta() -> None:
         "claims_provided": True,
         "dominant_mode": "mixed",
         "selected_tool_ids": ["column_frequency", "numeric_summary"],
-        "auto_claims_enabled": True,
+        "auto_claims_enabled": False,
     }
