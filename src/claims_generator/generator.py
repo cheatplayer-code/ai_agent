@@ -10,6 +10,7 @@ from src.verification_layer.claims import (
     CLAIM_TYPE_DATE_RANGE_PRESENT,
     CLAIM_TYPE_HIGH_CARDINALITY_PRESENT,
     CLAIM_TYPE_HIGH_MISSINGNESS,
+    HIGH_MISSINGNESS_RATIO_THRESHOLD,
     CLAIM_TYPE_OUTLIERS_PRESENT,
     CLAIM_TYPE_STRONG_CORRELATION,
     STRONG_CORRELATION_ABS_THRESHOLD,
@@ -29,24 +30,87 @@ def _evidence_ref(item: dict[str, Any]) -> str | None:
     return ref if isinstance(ref, str) and ref else None
 
 
+def _numeric(value: Any) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
+def _derive_missing_ratio_from_mapping(mapping: dict[str, Any]) -> float | None:
+    for key in ("missing_ratio", "ratio"):
+        numeric = _numeric(mapping.get(key))
+        if numeric is not None:
+            return numeric
+
+    total_missing_cells = _numeric(mapping.get("total_missing_cells"))
+    total_cells = _numeric(mapping.get("total_cells"))
+    if (
+        total_missing_cells is not None
+        and total_cells is not None
+        and total_cells > 0
+    ):
+        return total_missing_cells / total_cells
+
+    row_count = _numeric(mapping.get("row_count"))
+    column_count = _numeric(mapping.get("column_count"))
+    if (
+        total_missing_cells is not None
+        and row_count is not None
+        and column_count is not None
+    ):
+        derived_total_cells = row_count * column_count
+        if derived_total_cells > 0:
+            return total_missing_cells / derived_total_cells
+
+    missing_count = _numeric(mapping.get("missing_count"))
+    total_rows = _numeric(mapping.get("total_rows"))
+    if missing_count is not None and total_rows is not None and total_rows > 0:
+        return missing_count / total_rows
+
+    non_null_count = _numeric(mapping.get("non_null_count"))
+    if missing_count is not None and non_null_count is not None:
+        denominator = missing_count + non_null_count
+        if denominator > 0:
+            return missing_count / denominator
+
+    return None
+
+
 def _has_high_missingness(dq_suite: SuiteResult | None) -> tuple[bool, list[str]]:
     if dq_suite is None:
         return False, []
 
     refs: list[str] = []
+    observed_max_ratio: float | None = None
     for result in dq_suite.results:
         if result.check_id != "missing_values":
             continue
 
-        matching_issue_refs = [issue.issue_id for issue in result.issues if issue.code == "MISSING_VALUES"]
-        if matching_issue_refs:
-            refs.extend(matching_issue_refs)
+        derived_from_metrics = _derive_missing_ratio_from_mapping(result.metrics)
+        if derived_from_metrics is not None:
+            observed_max_ratio = (
+                derived_from_metrics
+                if observed_max_ratio is None
+                else max(observed_max_ratio, derived_from_metrics)
+            )
 
-        affected = result.metrics.get("affected_column_count")
-        if isinstance(affected, int) and affected > 0:
-            return True, refs
+        missing_value_issues = [issue for issue in result.issues if issue.code == "MISSING_VALUES"]
+        if missing_value_issues:
+            refs.extend(issue.issue_id for issue in missing_value_issues)
 
-    return bool(refs), refs
+        for issue in missing_value_issues:
+            issue_ratio = _derive_missing_ratio_from_mapping(issue.details)
+            if issue_ratio is not None:
+                observed_max_ratio = (
+                    issue_ratio
+                    if observed_max_ratio is None
+                    else max(observed_max_ratio, issue_ratio)
+                )
+
+    if observed_max_ratio is None:
+        return False, refs
+
+    return observed_max_ratio >= HIGH_MISSINGNESS_RATIO_THRESHOLD, refs
 
 
 def _has_outliers(evidence: list[dict[str, Any]]) -> tuple[bool, list[str]]:

@@ -61,7 +61,6 @@ def test_repeated_runs_produce_identical_report_payloads(
     [
         ("correlation.csv", None, "strong_correlation"),
         ("dates.xlsx", None, "date_range_present"),
-        ("dirty.csv", None, "high_missingness"),
     ],
 )
 def test_pipeline_with_auto_claims_generates_non_empty_claims_for_supported_signals(
@@ -78,6 +77,17 @@ def test_pipeline_with_auto_claims_generates_non_empty_claims_for_supported_sign
 
     assert report.claims
     assert expected_claim_type in [claim.claim_type for claim in report.claims]
+
+
+def test_pipeline_dirty_fixture_does_not_auto_generate_high_missingness_without_ratio() -> None:
+    report = run_pipeline(
+        source_path=str(FIXTURES_DIR / "dirty.csv"),
+        policy=ExecutionPolicy(),
+        sheet_name=None,
+        claims=None,
+    )
+
+    assert "high_missingness" not in [claim.claim_type for claim in report.claims]
 
 
 def test_pipeline_output_structure_and_summary_consistency() -> None:
