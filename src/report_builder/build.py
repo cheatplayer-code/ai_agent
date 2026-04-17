@@ -19,6 +19,15 @@ from src.report_builder.schema import (
     SuiteResult,
     VerificationSuiteResult,
 )
+from src.report_builder.frontend_fields import (
+    build_chart_payloads,
+    build_confidence_block,
+    build_dq_panel,
+    build_insight_panel,
+    build_recommendation_panel,
+    build_schema_panel,
+    build_summary_cards,
+)
 from src.ui_contract import generate_ui_contract_fields
 
 
@@ -85,6 +94,38 @@ def build_analysis_report(
         evidence=evidence_items,
         dataset_kind=str(product.get("dataset_kind", "")) or None,
     )
+    summary_cards = build_summary_cards(
+        data_quality_score=int(ui_contract.get("data_quality_score", 0)),
+        issues=issues,
+        verification=verification,
+        evidence=evidence_items,
+    )
+    schema_panel = build_schema_panel(schema)
+    dq_panel = build_dq_panel(
+        data_quality_score=int(ui_contract.get("data_quality_score", 0)),
+        issues=issues,
+    )
+    insight_panel = build_insight_panel(
+        key_findings=_filter_str_list(product.get("key_findings")),
+        claims=claims,
+        verification=verification,
+    )
+    recommendation_panel = build_recommendation_panel(
+        _filter_str_list(product.get("recommendations")),
+    )
+    confidence_block = build_confidence_block(
+        confidence_level=str(ui_contract.get("confidence_level", "")),
+        confidence_reason=str(ui_contract.get("confidence_reason", "")),
+        verification=verification,
+        issues=issues,
+    )
+    chart_specs = ui_contract.get("chart_specs", [])
+    chart_payloads = build_chart_payloads(
+        chart_specs=chart_specs if isinstance(chart_specs, list) else [],
+        table=table,
+        evidence=evidence_items,
+        summary_cards=summary_cards,
+    )
 
     return AnalysisReport(
         generated_at=None,
@@ -116,7 +157,14 @@ def build_analysis_report(
         top_issue=ui_contract.get("top_issue"),
         confidence_level=str(ui_contract.get("confidence_level", "")),
         confidence_reason=str(ui_contract.get("confidence_reason", "")),
-        chart_specs=ui_contract.get("chart_specs", []),
+        chart_specs=chart_specs if isinstance(chart_specs, list) else [],
+        summary_cards=summary_cards,
+        schema_panel=schema_panel,
+        dq_panel=dq_panel,
+        insight_panel=insight_panel,
+        recommendation_panel=recommendation_panel,
+        confidence_block=confidence_block,
+        chart_payloads=chart_payloads,
         export_state=ui_contract.get("export_state", {}),
         summary=AnalysisSummary(
             rows=table.row_count,

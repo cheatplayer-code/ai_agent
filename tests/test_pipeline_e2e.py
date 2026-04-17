@@ -180,6 +180,41 @@ def test_pipeline_model_dump_contains_required_ui_runtime_fields() -> None:
     assert payload["confidence_level"] == "high"
 
 
+@pytest.mark.parametrize(
+    ("fixture_name", "sheet_name", "expected_extra_chart"),
+    [
+        ("correlation.csv", None, "scatter"),
+        ("dates.xlsx", "DataSheet", "line"),
+        ("dirty.csv", None, None),
+    ],
+)
+def test_pipeline_includes_frontend_chart_payloads(
+    fixture_name: str,
+    sheet_name: str | None,
+    expected_extra_chart: str | None,
+) -> None:
+    report = run_pipeline(
+        source_path=str(FIXTURES_DIR / fixture_name),
+        policy=ExecutionPolicy(),
+        sheet_name=sheet_name,
+        claims=None,
+    )
+
+    assert report.chart_payloads
+    assert report.chart_payloads[0]["chart_type"] == "metric_cards"
+    assert report.chart_payloads[0]["data"] == [report.summary_cards]
+    assert report.chart_payloads[0]["chart_id"] == "chart_1_metric_cards"
+
+    payload_types = [item["chart_type"] for item in report.chart_payloads]
+    if expected_extra_chart is None:
+        assert payload_types == ["metric_cards"]
+    else:
+        assert expected_extra_chart in payload_types
+        target = next(item for item in report.chart_payloads if item["chart_type"] == expected_extra_chart)
+        assert isinstance(target["data"], list)
+        assert len(target["data"]) > 0
+
+
 def test_pipeline_output_is_json_serializable() -> None:
     report = run_pipeline(
         source_path=str(FIXTURES_DIR / "sample.xlsx"),
