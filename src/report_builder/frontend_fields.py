@@ -58,7 +58,9 @@ def _safe_scalar(value: Any) -> Any:
         except Exception:
             pass
     try:
-        if value != value:  # NaN-like
+        import pandas as pd
+
+        if bool(pd.isna(value)):
             return None
     except Exception:
         pass
@@ -205,12 +207,10 @@ def build_insight_panel(
     verified_ids = {
         result.claim_id for result in (verification.results if verification is not None else []) if result.verified
     }
-    claim_by_statement = {claim.statement: claim for claim in claims}
-
     findings = key_findings if key_findings else [claim.statement for claim in claims]
     output: list[dict[str, Any]] = []
     for index, summary in enumerate(findings, start=1):
-        matched_claim = claim_by_statement.get(summary)
+        matched_claim = next((claim for claim in claims if claim.statement == summary), None)
         evidence_refs = matched_claim.evidence_refs if matched_claim is not None else []
         status = (
             "verified"
@@ -375,4 +375,3 @@ def build_chart_payloads(
             }
         )
     return payloads
-

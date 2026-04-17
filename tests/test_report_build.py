@@ -281,9 +281,13 @@ def test_report_contains_frontend_ready_grouped_fields() -> None:
     }
 
     assert report.schema_panel
-    assert report.schema_panel[0]["name"] == "a"
-    assert report.schema_panel[0]["detected_type"] == "float"
-    assert report.schema_panel[0]["role"] == "id_like"
+    assert report.schema_panel[0] == {
+        "name": "a",
+        "detected_type": "float",
+        "nullable": True,
+        "unique_ratio": 1.0,
+        "role": "id_like",
+    }
     assert report.schema_panel[1]["role"] == "id_like"
 
     assert report.dq_panel["overall_score"] == 78
