@@ -124,3 +124,67 @@ def test_tool_evidence_is_json_serializable() -> None:
         all_rows.extend(tool.runner(table, schema, policy))
 
     json.dumps(all_rows)
+
+
+def test_temporal_tools_emit_period_change_trend_and_anomaly() -> None:
+    df = pd.DataFrame(
+        {
+            "order_date": [
+                "2024-01-01",
+                "2024-02-01",
+                "2024-03-01",
+                "2024-04-01",
+                "2024-05-01",
+                "2024-06-01",
+                "2024-07-01",
+            ],
+            "revenue": [100, 120, 130, 140, 20, 155, 170],
+        }
+    )
+    table = _table(df)
+    schema = _schema([("order_date", "datetime"), ("revenue", "float")])
+    policy = ExecutionPolicy()
+    by_tool = {tool.tool_id: tool.runner(table, schema, policy) for tool in get_builtin_tools()}
+
+    assert by_tool["period_change_summary"]
+    assert by_tool["period_change_summary"][0]["metric_name"] == "period_over_period_change"
+
+    trend_rows = by_tool["temporal_trend_summary"]
+    assert {row["metric_name"] for row in trend_rows} >= {
+        "trend_slope",
+        "peak_period_value",
+        "trough_period_value",
+    }
+    assert trend_rows[0]["value"]["period_count"] >= 4
+
+    anomaly_rows = by_tool["temporal_anomaly_summary"]
+    assert anomaly_rows
+    assert anomaly_rows[0]["metric_name"] == "temporal_anomaly_score"
+    assert abs(anomaly_rows[0]["value"]["z_score"]) >= 2.5
+
+
+def test_category_and_segment_tools_emit_share_and_underperformance_metrics() -> None:
+    df = pd.DataFrame(
+        {
+            "region": ["North"] * 6 + ["South"] * 6 + ["East"] * 6,
+            "revenue": [120, 130, 110, 125, 135, 115, 40, 45, 35, 42, 38, 41, 90, 95, 85, 88, 92, 89],
+        }
+    )
+    table = _table(df)
+    schema = _schema([("region", "string"), ("revenue", "float")])
+    policy = ExecutionPolicy()
+    by_tool = {tool.tool_id: tool.runner(table, schema, policy) for tool in get_builtin_tools()}
+
+    category_rows = by_tool["category_share_summary"]
+    assert {row["metric_name"] for row in category_rows} == {
+        "dominant_category_share",
+        "category_concentration_ratio",
+    }
+    dominant = next(row for row in category_rows if row["metric_name"] == "dominant_category_share")
+    assert dominant["value"]["top_category"] == "North"
+    assert dominant["value"]["top_category_share"] > 0.4
+
+    segment_rows = by_tool["segment_performance_summary"]
+    metric_names = {row["metric_name"] for row in segment_rows}
+    assert "segment_metric_rank" in metric_names
+    assert "segment_underperformance_score" in metric_names

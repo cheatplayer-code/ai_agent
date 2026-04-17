@@ -156,3 +156,122 @@ def test_claim_generation_is_deterministic_and_json_serializable() -> None:
         claim.model_dump(mode="json") for claim in second
     ]
     json.dumps([claim.model_dump(mode="json") for claim in first])
+
+
+def test_generates_new_temporal_and_category_claim_types_from_strong_evidence() -> None:
+    evidence = [
+        {
+            "evidence_id": "trend:revenue",
+            "source": "analysis_tools.temporal_trend_summary",
+            "metric_name": "trend_slope",
+            "value": {"direction": "increasing", "period_count": 8, "slope_ratio": 0.03},
+            "details": {},
+        },
+        {
+            "evidence_id": "dominant:region",
+            "source": "analysis_tools.category_share_summary",
+            "metric_name": "dominant_category_share",
+            "value": {"top_category": "A", "top_category_share": 0.42},
+            "details": {},
+        },
+        {
+            "evidence_id": "conc:region",
+            "source": "analysis_tools.category_share_summary",
+            "metric_name": "category_concentration_ratio",
+            "value": {"top_3_share": 0.75},
+            "details": {},
+        },
+        {
+            "evidence_id": "anomaly:revenue:may",
+            "source": "analysis_tools.temporal_anomaly_summary",
+            "metric_name": "temporal_anomaly_score",
+            "value": {"z_score": 2.7},
+            "details": {},
+        },
+        {
+            "evidence_id": "under:region",
+            "source": "analysis_tools.segment_performance_summary",
+            "metric_name": "segment_underperformance_score",
+            "value": {"underperforming_segment": "South", "underperformance_ratio": 0.7, "support_count": 10},
+            "details": {},
+        },
+        {
+            "evidence_id": "peak:revenue",
+            "source": "analysis_tools.temporal_trend_summary",
+            "metric_name": "peak_period_value",
+            "value": {"period_label": "2024-06"},
+            "details": {},
+        },
+        {
+            "evidence_id": "trough:revenue",
+            "source": "analysis_tools.temporal_trend_summary",
+            "metric_name": "trough_period_value",
+            "value": {"period_label": "2024-05"},
+            "details": {},
+        },
+    ]
+
+    claims = generate_claims(
+        table=TableArtifact(
+            df=pd.DataFrame({"x": [1]}),
+            source_path="in-memory.csv",
+            file_type="csv",
+            original_columns=["x"],
+            normalized_columns=["x"],
+        ),
+        schema=DetectedSchema(columns=[], sampled_rows=1, notes=[]),
+        dq_suite=None,
+        evidence=evidence,
+    )
+
+    claim_types = {claim.claim_type for claim in claims}
+    assert "trend_increase" in claim_types
+    assert "dominant_category" in claim_types
+    assert "concentrated_distribution" in claim_types
+    assert "time_anomaly_detected" in claim_types
+    assert "segment_underperformance" in claim_types
+    assert "peak_period_detected" in claim_types
+    assert "trough_period_detected" in claim_types
+
+
+def test_new_claims_are_not_emitted_when_evidence_is_weak() -> None:
+    weak_evidence = [
+        {
+            "evidence_id": "trend:weak",
+            "source": "analysis_tools.temporal_trend_summary",
+            "metric_name": "trend_slope",
+            "value": {"direction": "increasing", "period_count": 3, "slope_ratio": 0.001},
+            "details": {},
+        },
+        {
+            "evidence_id": "dominant:weak",
+            "source": "analysis_tools.category_share_summary",
+            "metric_name": "dominant_category_share",
+            "value": {"top_category": "A", "top_category_share": 0.25},
+            "details": {},
+        },
+        {
+            "evidence_id": "under:weak",
+            "source": "analysis_tools.segment_performance_summary",
+            "metric_name": "segment_underperformance_score",
+            "value": {"underperforming_segment": "South", "underperformance_ratio": 0.9, "support_count": 2},
+            "details": {},
+        },
+    ]
+
+    claims = generate_claims(
+        table=TableArtifact(
+            df=pd.DataFrame({"x": [1]}),
+            source_path="in-memory.csv",
+            file_type="csv",
+            original_columns=["x"],
+            normalized_columns=["x"],
+        ),
+        schema=DetectedSchema(columns=[], sampled_rows=1, notes=[]),
+        dq_suite=None,
+        evidence=weak_evidence,
+    )
+    claim_types = {claim.claim_type for claim in claims}
+    assert "trend_increase" not in claim_types
+    assert "dominant_category" not in claim_types
+    assert "segment_underperformance" not in claim_types
