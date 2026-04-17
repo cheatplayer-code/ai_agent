@@ -178,6 +178,13 @@ class AnalysisReport(_StrictBase):
     confidence_level: str = ""
     confidence_reason: str = ""
     chart_specs: list[dict[str, Any]] = Field(default_factory=list)
+    summary_cards: dict[str, int] = Field(default_factory=dict)
+    schema_panel: list[dict[str, Any]] = Field(default_factory=list)
+    dq_panel: dict[str, Any] = Field(default_factory=dict)
+    insight_panel: list[dict[str, Any]] = Field(default_factory=list)
+    recommendation_panel: list[dict[str, Any]] = Field(default_factory=list)
+    confidence_block: dict[str, Any] = Field(default_factory=dict)
+    chart_payloads: list[dict[str, Any]] = Field(default_factory=list)
     export_state: dict[str, Any] = Field(default_factory=dict)
     summary: AnalysisSummary
     issues: list[Issue] = Field(default_factory=list)

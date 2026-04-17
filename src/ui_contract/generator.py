@@ -198,14 +198,24 @@ def _find_verified_correlation_pair(
             continue
         col_a = first_pair.get("col_a")
         col_b = first_pair.get("col_b")
-        if isinstance(col_a, str) and isinstance(col_b, str):
+        if (
+            isinstance(col_a, str)
+            and isinstance(col_b, str)
+            and not _is_entity_column(col_a)
+            and not _is_entity_column(col_b)
+        ):
             return col_a, col_b
     for item in evidence:
         if item.metric_name != "pearson_correlation":
             continue
         col_a = item.details.get("col_a")
         col_b = item.details.get("col_b")
-        if isinstance(col_a, str) and isinstance(col_b, str):
+        if (
+            isinstance(col_a, str)
+            and isinstance(col_b, str)
+            and not _is_entity_column(col_a)
+            and not _is_entity_column(col_b)
+        ):
             return col_a, col_b
     return None
 
@@ -572,7 +582,7 @@ def _find_numeric_column(evidence: list[EvidenceItem]) -> str | None:
         if item.metric_name != "numeric_summary":
             continue
         column_name = item.details.get("column_name")
-        if isinstance(column_name, str):
+        if isinstance(column_name, str) and not _is_entity_column(column_name):
             return column_name
     return None
 
@@ -632,7 +642,12 @@ def _find_correlation_pair(
             continue
         col_a = first_pair.get("col_a")
         col_b = first_pair.get("col_b")
-        if isinstance(col_a, str) and isinstance(col_b, str):
+        if (
+            isinstance(col_a, str)
+            and isinstance(col_b, str)
+            and not _is_entity_column(col_a)
+            and not _is_entity_column(col_b)
+        ):
             return col_a, col_b
 
     for item in evidence:
@@ -640,7 +655,12 @@ def _find_correlation_pair(
             continue
         col_a = item.details.get("col_a")
         col_b = item.details.get("col_b")
-        if isinstance(col_a, str) and isinstance(col_b, str):
+        if (
+            isinstance(col_a, str)
+            and isinstance(col_b, str)
+            and not _is_entity_column(col_a)
+            and not _is_entity_column(col_b)
+        ):
             return col_a, col_b
     return None
 

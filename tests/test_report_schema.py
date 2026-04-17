@@ -185,6 +185,13 @@ def test_analysis_report_json_serializable() -> None:
     assert "confidence_level" in data
     assert "confidence_reason" in data
     assert "chart_specs" in data
+    assert "summary_cards" in data
+    assert "schema_panel" in data
+    assert "dq_panel" in data
+    assert "insight_panel" in data
+    assert "recommendation_panel" in data
+    assert "confidence_block" in data
+    assert "chart_payloads" in data
     assert "export_state" in data
 
 

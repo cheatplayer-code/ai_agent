@@ -267,3 +267,52 @@ def test_report_contains_product_facing_output_fields() -> None:
         "charts_prepared": True,
         "export_available": True,
     }
+
+
+def test_report_contains_frontend_ready_grouped_fields() -> None:
+    report = _report()
+
+    assert report.summary_cards == {
+        "data_quality_score": 78,
+        "missing_values_count": 1,
+        "duplicate_rows_count": 0,
+        "anomalies_found_count": 0,
+        "verified_claim_count": 1,
+    }
+
+    assert report.schema_panel
+    assert report.schema_panel[0] == {
+        "name": "a",
+        "detected_type": "float",
+        "nullable": True,
+        "unique_ratio": 1.0,
+        "role": "id_like",
+    }
+    assert report.schema_panel[1]["role"] == "id_like"
+
+    assert report.dq_panel["overall_score"] == 78
+    assert report.dq_panel["issue_counts"]["error_count"] == 1
+    assert report.dq_panel["issue_counts"]["warning_count"] == 1
+    assert report.dq_panel["top_affected_columns"] == ["b", "a"]
+
+    assert report.insight_panel
+    assert report.insight_panel[0]["title"] == "Insight 1"
+    assert report.insight_panel[0]["summary"] == "Strong correlation detected between a and b."
+    assert report.insight_panel[0]["priority"] == "high"
+
+    assert report.recommendation_panel == [
+        {
+            "text": "Investigate the strong numeric relationship between a and b.",
+            "order": 1,
+            "priority": "high",
+        }
+    ]
+
+    assert report.confidence_block["level"] == "low"
+    assert report.confidence_block["verified_claim_count"] == 1
+    assert report.confidence_block["warning_count"] == 1
+    assert report.confidence_block["error_count"] == 1
+
+    assert report.chart_payloads
+    assert report.chart_payloads[0]["chart_type"] == "metric_cards"
+    assert report.chart_payloads[0]["data"] == [report.summary_cards]

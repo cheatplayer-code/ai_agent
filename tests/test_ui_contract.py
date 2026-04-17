@@ -27,6 +27,13 @@ def test_analysis_report_model_fields_include_required_ui_contract_fields() -> N
         "confidence_level",
         "confidence_reason",
         "chart_specs",
+        "summary_cards",
+        "schema_panel",
+        "dq_panel",
+        "insight_panel",
+        "recommendation_panel",
+        "confidence_block",
+        "chart_payloads",
         "export_state",
     }
     fields = set(AnalysisReport.model_fields.keys())
