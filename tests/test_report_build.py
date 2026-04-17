@@ -262,9 +262,9 @@ def test_report_contains_product_facing_output_fields() -> None:
     assert report.chart_specs[0]["chart_type"] == "metric_cards"
     assert report.export_state == {
         "summary_ready": True,
-        "insights_generated": True,
-        "quality_issues_detected": True,
-        "charts_prepared": True,
+        "insights_generated": 1,
+        "quality_issues_detected": 2,
+        "charts_prepared": len(report.chart_specs),
         "export_available": True,
     }
 

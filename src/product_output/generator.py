@@ -6,7 +6,18 @@ import re
 from typing import Any
 
 from src.report_builder.schema import InsightClaim, SuiteResult, VerificationSuiteResult
-from src.verification_layer.claims import CLAIM_TYPE_STRONG_CORRELATION
+from src.verification_layer.claims import (
+    CLAIM_TYPE_CONCENTRATED_DISTRIBUTION,
+    CLAIM_TYPE_DOMINANT_CATEGORY,
+    CLAIM_TYPE_PEAK_PERIOD_DETECTED,
+    CLAIM_TYPE_SEGMENT_UNDERPERFORMANCE,
+    CLAIM_TYPE_STRONG_CORRELATION,
+    CLAIM_TYPE_STRONG_GROUP_DIFFERENCE,
+    CLAIM_TYPE_TIME_ANOMALY_DETECTED,
+    CLAIM_TYPE_TREND_DECREASE,
+    CLAIM_TYPE_TREND_INCREASE,
+    CLAIM_TYPE_TROUGH_PERIOD_DETECTED,
+)
 
 _BUILTIN_TOOL_IDS: tuple[str, ...] = (
     "column_frequency",
@@ -144,6 +155,31 @@ def _verified_results_by_claim_id(
         if result.verified:
             verified[result.claim_id] = result.details
     return verified
+
+
+def _verified_claim_details(
+    claims: list[InsightClaim],
+    verification: VerificationSuiteResult | None,
+    claim_type: str,
+) -> dict[str, Any] | None:
+    verified_details = _verified_results_by_claim_id(verification)
+    for claim in claims:
+        if claim.claim_type != claim_type:
+            continue
+        details = verified_details.get(claim.claim_id)
+        if isinstance(details, dict):
+            return details
+    return None
+
+
+def _first_evidence_value(evidence: list[dict[str, Any]], metric_name: str) -> dict[str, Any] | None:
+    for row in evidence:
+        if row.get("metric_name") != metric_name:
+            continue
+        value = row.get("value")
+        if isinstance(value, dict):
+            return value
+    return None
 
 
 def _first_date_coverage_range(evidence: list[dict[str, Any]]) -> tuple[str, str] | None:
@@ -396,8 +432,39 @@ def _executive_summary(
 
     # Compose a neutral insight sentence based on verification and evidence
     insight_sentence = "No strong verified insight was detected."
+    trend_increase = _verified_claim_details(verified_claims, verification, CLAIM_TYPE_TREND_INCREASE)
+    trend_decrease = _verified_claim_details(verified_claims, verification, CLAIM_TYPE_TREND_DECREASE)
+    dominant_category = _verified_claim_details(verified_claims, verification, CLAIM_TYPE_DOMINANT_CATEGORY)
+    anomaly = _verified_claim_details(verified_claims, verification, CLAIM_TYPE_TIME_ANOMALY_DETECTED)
+    underperformance = _verified_claim_details(
+        verified_claims, verification, CLAIM_TYPE_SEGMENT_UNDERPERFORMANCE
+    )
     pair = _strong_correlation_pair(claims=verified_claims, verification=verification, evidence=evidence)
-    if pair is not None:
+    if trend_increase is not None:
+        insight_sentence = "A verified upward trend was detected in the primary temporal metric."
+    elif trend_decrease is not None:
+        insight_sentence = "A verified downward trend was detected in the primary temporal metric."
+    elif dominant_category is not None:
+        top_category = dominant_category.get("top_category")
+        top_share = dominant_category.get("top_category_share")
+        if isinstance(top_category, str) and isinstance(top_share, (int, float)):
+            share_pct = round(float(top_share) * 100, 1)
+            insight_sentence = f"{top_category} contributes the largest share ({share_pct}%) in the main distribution."
+        else:
+            insight_sentence = "A dominant category was verified in the main distribution."
+    elif anomaly is not None:
+        period_label = anomaly.get("period_label")
+        if isinstance(period_label, str):
+            insight_sentence = f"{period_label} appears as a statistically unusual period."
+        else:
+            insight_sentence = "A statistically unusual period was verified."
+    elif underperformance is not None:
+        segment = underperformance.get("underperforming_segment")
+        if isinstance(segment, str):
+            insight_sentence = f"{segment} is a verified underperforming segment relative to peers."
+        else:
+            insight_sentence = "A verified underperforming segment was detected."
+    elif pair is not None:
         insight_sentence = f"A strong verified relationship was detected between {pair[0]} and {pair[1]}."
     else:
         date_range = _first_date_coverage_range(evidence)
@@ -516,6 +583,88 @@ def _key_findings(
                     text = f"Strong correlation detected between {col_a} and {col_b}."
             else:
                 text = "Strong numeric correlation was verified."
+        elif claim.claim_type == CLAIM_TYPE_TREND_INCREASE:
+            details = _verified_claim_details(claims, verification, CLAIM_TYPE_TREND_INCREASE) or {}
+            slope_ratio = details.get("slope_ratio")
+            if isinstance(slope_ratio, (int, float)):
+                text = f"Primary temporal metric shows a verified increasing trend (slope ratio={float(slope_ratio):.4f})."
+            else:
+                text = "Primary temporal metric shows a verified increasing trend."
+        elif claim.claim_type == CLAIM_TYPE_TREND_DECREASE:
+            details = _verified_claim_details(claims, verification, CLAIM_TYPE_TREND_DECREASE) or {}
+            slope_ratio = details.get("slope_ratio")
+            if isinstance(slope_ratio, (int, float)):
+                text = f"Primary temporal metric shows a verified decreasing trend (slope ratio={float(slope_ratio):.4f})."
+            else:
+                text = "Primary temporal metric shows a verified decreasing trend."
+        elif claim.claim_type == CLAIM_TYPE_DOMINANT_CATEGORY:
+            details = _verified_claim_details(claims, verification, CLAIM_TYPE_DOMINANT_CATEGORY) or {}
+            category = details.get("top_category")
+            share = details.get("top_category_share")
+            if isinstance(category, str) and isinstance(share, (int, float)):
+                text = f"{category} generated {round(float(share) * 100, 1)}% of the primary metric."
+            else:
+                text = "A dominant category was verified."
+        elif claim.claim_type == CLAIM_TYPE_CONCENTRATED_DISTRIBUTION:
+            details = _verified_claim_details(claims, verification, CLAIM_TYPE_CONCENTRATED_DISTRIBUTION) or {}
+            top_3_share = details.get("top_3_share")
+            if isinstance(top_3_share, (int, float)):
+                text = f"Top categories are concentrated, with top 3 accounting for {round(float(top_3_share) * 100, 1)}%."
+            else:
+                text = "The category distribution is concentrated in a small set of values."
+        elif claim.claim_type == CLAIM_TYPE_SEGMENT_UNDERPERFORMANCE:
+            details = _verified_claim_details(claims, verification, CLAIM_TYPE_SEGMENT_UNDERPERFORMANCE) or {}
+            segment = details.get("underperforming_segment")
+            ratio = details.get("underperformance_ratio")
+            stable_volume = details.get("stable_volume")
+            if isinstance(segment, str) and isinstance(ratio, (int, float)):
+                volume_suffix = " despite stable volume" if stable_volume else ""
+                text = (
+                    f"{segment} underperforms peers{volume_suffix} "
+                    f"(relative ratio={float(ratio):.3f})."
+                )
+            else:
+                text = "An underperforming segment was verified."
+        elif claim.claim_type == CLAIM_TYPE_TIME_ANOMALY_DETECTED:
+            details = _verified_claim_details(claims, verification, CLAIM_TYPE_TIME_ANOMALY_DETECTED) or {}
+            period_label = details.get("period_label")
+            z_score = details.get("z_score")
+            if isinstance(period_label, str) and isinstance(z_score, (int, float)):
+                text = f"{period_label} is anomalous relative to the temporal baseline (z={float(z_score):.2f})."
+            else:
+                text = "A temporal anomaly was detected."
+        elif claim.claim_type == CLAIM_TYPE_PEAK_PERIOD_DETECTED:
+            details = _verified_claim_details(claims, verification, CLAIM_TYPE_PEAK_PERIOD_DETECTED) or {}
+            period_label = details.get("period_label")
+            value = details.get("value")
+            if isinstance(period_label, str) and isinstance(value, (int, float)):
+                text = f"Peak period identified: {period_label} ({float(value):.2f})."
+            else:
+                text = "A peak period was identified."
+        elif claim.claim_type == CLAIM_TYPE_TROUGH_PERIOD_DETECTED:
+            details = _verified_claim_details(claims, verification, CLAIM_TYPE_TROUGH_PERIOD_DETECTED) or {}
+            period_label = details.get("period_label")
+            value = details.get("value")
+            if isinstance(period_label, str) and isinstance(value, (int, float)):
+                text = f"Trough period identified: {period_label} ({float(value):.2f})."
+            else:
+                text = "A trough period was identified."
+        elif claim.claim_type == CLAIM_TYPE_STRONG_GROUP_DIFFERENCE:
+            details = _verified_claim_details(claims, verification, CLAIM_TYPE_STRONG_GROUP_DIFFERENCE) or {}
+            top_segment = details.get("top_segment")
+            bottom_segment = details.get("bottom_segment")
+            ratio = details.get("top_bottom_ratio")
+            if (
+                isinstance(top_segment, str)
+                and isinstance(bottom_segment, str)
+                and isinstance(ratio, (int, float))
+            ):
+                text = (
+                    f"Strong group difference detected: {top_segment} vs {bottom_segment} "
+                    f"(ratio={float(ratio):.2f})."
+                )
+            else:
+                text = "Strong differences were detected across groups."
         elif claim.claim_type == "date_range_present":
             date_range = _first_date_coverage_range(evidence)
             if date_range is not None:
@@ -740,6 +889,25 @@ def _recommendations(
             _add(rec_text)
         else:
             _add(domain.get("verified_rel", "Investigate the verified strong numeric relationship."))
+
+    if any(claim.claim_type == CLAIM_TYPE_TREND_INCREASE for claim in verified_claims):
+        _add("Sustain the verified growth trend by reinforcing drivers in the strongest periods.")
+    if any(claim.claim_type == CLAIM_TYPE_TREND_DECREASE for claim in verified_claims):
+        _add("Investigate causes of the verified decline and prioritize corrective actions in recent periods.")
+    if any(claim.claim_type == CLAIM_TYPE_DOMINANT_CATEGORY for claim in verified_claims):
+        _add("Prioritize planning around the dominant category while monitoring concentration risk.")
+    if any(claim.claim_type == CLAIM_TYPE_CONCENTRATED_DISTRIBUTION for claim in verified_claims):
+        _add("Reduce concentration risk by evaluating diversification across lower-share categories.")
+    if any(claim.claim_type == CLAIM_TYPE_TIME_ANOMALY_DETECTED for claim in verified_claims):
+        _add("Investigate the anomalous period for potential data issues or operational events.")
+    if any(claim.claim_type == CLAIM_TYPE_SEGMENT_UNDERPERFORMANCE for claim in verified_claims):
+        _add("Review the underperforming segment and compare tactics used by better-performing peers.")
+    if any(claim.claim_type == CLAIM_TYPE_STRONG_GROUP_DIFFERENCE for claim in verified_claims):
+        _add("Analyze drivers of large group differences before applying uniform decisions.")
+    if any(claim.claim_type == CLAIM_TYPE_PEAK_PERIOD_DETECTED for claim in verified_claims):
+        _add("Use the peak period as a benchmark to replicate high-performing conditions.")
+    if any(claim.claim_type == CLAIM_TYPE_TROUGH_PERIOD_DETECTED for claim in verified_claims):
+        _add("Use the trough period for root-cause analysis and targeted remediation.")
 
     # Recommendation based on date range
     date_range = _first_date_coverage_range(evidence)

@@ -7,13 +7,31 @@ from typing import Any
 from src.core.enums import Severity
 from src.report_builder.schema import InsightClaim, SuiteResult, VerificationResult, VerificationSuiteResult
 from src.verification_layer.claims import (
+    CLAIM_TYPE_CONCENTRATED_DISTRIBUTION,
     CLAIM_TYPE_DATE_RANGE_PRESENT,
+    CLAIM_TYPE_DOMINANT_CATEGORY,
     CLAIM_TYPE_HIGH_CARDINALITY_PRESENT,
     CLAIM_TYPE_HIGH_MISSINGNESS,
     CLAIM_TYPE_OUTLIERS_PRESENT,
+    CLAIM_TYPE_PEAK_PERIOD_DETECTED,
+    CLAIM_TYPE_SEGMENT_UNDERPERFORMANCE,
     CLAIM_TYPE_STRONG_CORRELATION,
+    CLAIM_TYPE_STRONG_GROUP_DIFFERENCE,
+    CLAIM_TYPE_TIME_ANOMALY_DETECTED,
+    CLAIM_TYPE_TREND_DECREASE,
+    CLAIM_TYPE_TREND_INCREASE,
+    CLAIM_TYPE_TROUGH_PERIOD_DETECTED,
+    ANOMALY_MIN_PERIODS,
+    ANOMALY_Z_THRESHOLD,
+    CONCENTRATED_TOP3_SHARE_THRESHOLD,
+    DOMINANT_CATEGORY_SHARE_THRESHOLD,
+    GROUP_DIFFERENCE_RATIO_THRESHOLD,
     HIGH_MISSINGNESS_RATIO_THRESHOLD,
+    SEGMENT_MIN_SUPPORT,
+    SEGMENT_UNDERPERFORMANCE_RATIO_THRESHOLD,
     STRONG_CORRELATION_ABS_THRESHOLD,
+    TREND_MIN_PERIODS,
+    TREND_SLOPE_RATIO_THRESHOLD,
     is_supported_claim_type,
 )
 
@@ -463,6 +481,295 @@ def _verify_date_range_present(claim: InsightClaim, evidence: list[dict[str, Any
     )
 
 
+def _verify_trend_direction(
+    claim: InsightClaim,
+    evidence: list[dict[str, Any]],
+    expected_direction: str,
+) -> VerificationResult:
+    candidates = _metric_evidence(evidence, {"trend_slope"})
+    if not candidates:
+        return _warning_result(
+            claim.claim_id,
+            "Missing required evidence: trend_slope.",
+        )
+
+    refs: list[str] = []
+    for item in candidates:
+        ref = _evidence_ref(item)
+        if ref:
+            refs.append(ref)
+
+        value = _as_dict(item.get("value"))
+        direction = value.get("direction")
+        period_count = value.get("period_count")
+        slope_ratio = _numeric(value.get("slope_ratio"))
+
+        if not isinstance(direction, str):
+            continue
+        if not isinstance(period_count, int) or period_count < TREND_MIN_PERIODS:
+            continue
+        if slope_ratio is None or abs(slope_ratio) < TREND_SLOPE_RATIO_THRESHOLD:
+            continue
+        if direction != expected_direction:
+            continue
+
+        return _info_result(
+            claim.claim_id,
+            "Trend direction threshold met.",
+            evidence_refs=refs,
+            details={
+                "expected_direction": expected_direction,
+                "observed_direction": direction,
+                "period_count": period_count,
+                "slope_ratio": slope_ratio,
+                "slope_ratio_threshold": TREND_SLOPE_RATIO_THRESHOLD,
+            },
+        )
+
+    return _warning_result(
+        claim.claim_id,
+        "Trend direction threshold not met.",
+        evidence_refs=refs,
+        details={
+            "expected_direction": expected_direction,
+            "slope_ratio_threshold": TREND_SLOPE_RATIO_THRESHOLD,
+            "min_periods": TREND_MIN_PERIODS,
+        },
+    )
+
+
+def _verify_dominant_category(claim: InsightClaim, evidence: list[dict[str, Any]]) -> VerificationResult:
+    candidates = _metric_evidence(evidence, {"dominant_category_share"})
+    if not candidates:
+        return _warning_result(claim.claim_id, "Missing required evidence: dominant_category_share.")
+
+    refs: list[str] = []
+    for item in candidates:
+        ref = _evidence_ref(item)
+        if ref:
+            refs.append(ref)
+        value = _as_dict(item.get("value"))
+        top_share = _numeric(value.get("top_category_share"))
+        top_category = value.get("top_category")
+        if top_share is None or not isinstance(top_category, str):
+            continue
+        if top_share < DOMINANT_CATEGORY_SHARE_THRESHOLD:
+            continue
+        return _info_result(
+            claim.claim_id,
+            "Dominant category threshold met.",
+            evidence_refs=refs,
+            details={
+                "top_category": top_category,
+                "top_category_share": top_share,
+                "threshold": DOMINANT_CATEGORY_SHARE_THRESHOLD,
+            },
+        )
+
+    return _warning_result(
+        claim.claim_id,
+        "Dominant category threshold not met.",
+        evidence_refs=refs,
+        details={"threshold": DOMINANT_CATEGORY_SHARE_THRESHOLD},
+    )
+
+
+def _verify_concentrated_distribution(claim: InsightClaim, evidence: list[dict[str, Any]]) -> VerificationResult:
+    candidates = _metric_evidence(evidence, {"category_concentration_ratio"})
+    if not candidates:
+        return _warning_result(claim.claim_id, "Missing required evidence: category_concentration_ratio.")
+
+    refs: list[str] = []
+    for item in candidates:
+        ref = _evidence_ref(item)
+        if ref:
+            refs.append(ref)
+        value = _as_dict(item.get("value"))
+        top_3_share = _numeric(value.get("top_3_share"))
+        if top_3_share is None:
+            continue
+        if top_3_share < CONCENTRATED_TOP3_SHARE_THRESHOLD:
+            continue
+        return _info_result(
+            claim.claim_id,
+            "Concentration threshold met.",
+            evidence_refs=refs,
+            details={
+                "top_3_share": top_3_share,
+                "threshold": CONCENTRATED_TOP3_SHARE_THRESHOLD,
+            },
+        )
+
+    return _warning_result(
+        claim.claim_id,
+        "Concentration threshold not met.",
+        evidence_refs=refs,
+        details={"threshold": CONCENTRATED_TOP3_SHARE_THRESHOLD},
+    )
+
+
+def _verify_segment_underperformance(claim: InsightClaim, evidence: list[dict[str, Any]]) -> VerificationResult:
+    candidates = _metric_evidence(evidence, {"segment_underperformance_score"})
+    if not candidates:
+        return _warning_result(claim.claim_id, "Missing required evidence: segment_underperformance_score.")
+
+    refs: list[str] = []
+    for item in candidates:
+        ref = _evidence_ref(item)
+        if ref:
+            refs.append(ref)
+        value = _as_dict(item.get("value"))
+
+        ratio = _numeric(value.get("underperformance_ratio"))
+        support_count = value.get("support_count")
+        segment = value.get("underperforming_segment")
+
+        if ratio is None or not isinstance(support_count, int) or not isinstance(segment, str):
+            continue
+        if support_count < SEGMENT_MIN_SUPPORT:
+            continue
+        if ratio > SEGMENT_UNDERPERFORMANCE_RATIO_THRESHOLD:
+            continue
+
+        return _info_result(
+            claim.claim_id,
+            "Segment underperformance threshold met.",
+            evidence_refs=refs,
+            details={
+                "underperforming_segment": segment,
+                "underperformance_ratio": ratio,
+                "threshold": SEGMENT_UNDERPERFORMANCE_RATIO_THRESHOLD,
+                "support_count": support_count,
+                "min_support": SEGMENT_MIN_SUPPORT,
+                "stable_volume": bool(value.get("stable_volume")),
+            },
+        )
+
+    return _warning_result(
+        claim.claim_id,
+        "Segment underperformance threshold not met.",
+        evidence_refs=refs,
+        details={
+            "threshold": SEGMENT_UNDERPERFORMANCE_RATIO_THRESHOLD,
+            "min_support": SEGMENT_MIN_SUPPORT,
+        },
+    )
+
+
+def _verify_time_anomaly(claim: InsightClaim, evidence: list[dict[str, Any]]) -> VerificationResult:
+    candidates = _metric_evidence(evidence, {"temporal_anomaly_score"})
+    if not candidates:
+        return _warning_result(claim.claim_id, "Missing required evidence: temporal_anomaly_score.")
+
+    refs: list[str] = []
+    for item in candidates:
+        ref = _evidence_ref(item)
+        if ref:
+            refs.append(ref)
+        value = _as_dict(item.get("value"))
+        z_score = _numeric(value.get("z_score"))
+        period_count = value.get("period_count")
+        period_label = value.get("period_label")
+
+        if z_score is None or not isinstance(period_count, int) or not isinstance(period_label, str):
+            continue
+        if period_count < ANOMALY_MIN_PERIODS:
+            continue
+        if abs(z_score) < ANOMALY_Z_THRESHOLD:
+            continue
+
+        return _info_result(
+            claim.claim_id,
+            "Temporal anomaly threshold met.",
+            evidence_refs=refs,
+            details={
+                "period_label": period_label,
+                "z_score": z_score,
+                "threshold": ANOMALY_Z_THRESHOLD,
+                "period_count": period_count,
+                "min_periods": ANOMALY_MIN_PERIODS,
+            },
+        )
+
+    return _warning_result(
+        claim.claim_id,
+        "Temporal anomaly threshold not met.",
+        evidence_refs=refs,
+        details={
+            "threshold": ANOMALY_Z_THRESHOLD,
+            "min_periods": ANOMALY_MIN_PERIODS,
+        },
+    )
+
+
+def _verify_period_extrema(claim: InsightClaim, evidence: list[dict[str, Any]], metric_name: str) -> VerificationResult:
+    candidates = _metric_evidence(evidence, {metric_name})
+    if not candidates:
+        return _warning_result(claim.claim_id, f"Missing required evidence: {metric_name}.")
+
+    refs: list[str] = []
+    for item in candidates:
+        ref = _evidence_ref(item)
+        if ref:
+            refs.append(ref)
+        value = _as_dict(item.get("value"))
+        period_label = value.get("period_label")
+        observed = _numeric(value.get("value"))
+        if not isinstance(period_label, str) or observed is None:
+            continue
+        return _info_result(
+            claim.claim_id,
+            "Temporal extrema evidence detected.",
+            evidence_refs=refs,
+            details={"period_label": period_label, "value": observed, "metric_name": metric_name},
+        )
+
+    return _warning_result(
+        claim.claim_id,
+        "Temporal extrema evidence incomplete.",
+        evidence_refs=refs,
+        details={"metric_name": metric_name},
+    )
+
+
+def _verify_strong_group_difference(claim: InsightClaim, evidence: list[dict[str, Any]]) -> VerificationResult:
+    candidates = _metric_evidence(evidence, {"strong_group_difference"})
+    if not candidates:
+        return _warning_result(claim.claim_id, "Missing required evidence: strong_group_difference.")
+
+    refs: list[str] = []
+    for item in candidates:
+        ref = _evidence_ref(item)
+        if ref:
+            refs.append(ref)
+        value = _as_dict(item.get("value"))
+        ratio = _numeric(value.get("top_bottom_ratio"))
+        top_segment = value.get("top_segment")
+        bottom_segment = value.get("bottom_segment")
+        if ratio is None or not isinstance(top_segment, str) or not isinstance(bottom_segment, str):
+            continue
+        if ratio < GROUP_DIFFERENCE_RATIO_THRESHOLD:
+            continue
+        return _info_result(
+            claim.claim_id,
+            "Strong group difference threshold met.",
+            evidence_refs=refs,
+            details={
+                "top_segment": top_segment,
+                "bottom_segment": bottom_segment,
+                "top_bottom_ratio": ratio,
+                "threshold": GROUP_DIFFERENCE_RATIO_THRESHOLD,
+            },
+        )
+
+    return _warning_result(
+        claim.claim_id,
+        "Strong group difference threshold not met.",
+        evidence_refs=refs,
+        details={"threshold": GROUP_DIFFERENCE_RATIO_THRESHOLD},
+    )
+
+
 def _verify_single_claim(
     claim: InsightClaim,
     evidence: list[dict[str, Any]],
@@ -484,6 +791,24 @@ def _verify_single_claim(
         return _verify_high_cardinality(claim, evidence, dq_suite)
     if claim.claim_type == CLAIM_TYPE_DATE_RANGE_PRESENT:
         return _verify_date_range_present(claim, evidence)
+    if claim.claim_type == CLAIM_TYPE_TREND_INCREASE:
+        return _verify_trend_direction(claim, evidence, "increasing")
+    if claim.claim_type == CLAIM_TYPE_TREND_DECREASE:
+        return _verify_trend_direction(claim, evidence, "decreasing")
+    if claim.claim_type == CLAIM_TYPE_DOMINANT_CATEGORY:
+        return _verify_dominant_category(claim, evidence)
+    if claim.claim_type == CLAIM_TYPE_CONCENTRATED_DISTRIBUTION:
+        return _verify_concentrated_distribution(claim, evidence)
+    if claim.claim_type == CLAIM_TYPE_SEGMENT_UNDERPERFORMANCE:
+        return _verify_segment_underperformance(claim, evidence)
+    if claim.claim_type == CLAIM_TYPE_TIME_ANOMALY_DETECTED:
+        return _verify_time_anomaly(claim, evidence)
+    if claim.claim_type == CLAIM_TYPE_PEAK_PERIOD_DETECTED:
+        return _verify_period_extrema(claim, evidence, "peak_period_value")
+    if claim.claim_type == CLAIM_TYPE_TROUGH_PERIOD_DETECTED:
+        return _verify_period_extrema(claim, evidence, "trough_period_value")
+    if claim.claim_type == CLAIM_TYPE_STRONG_GROUP_DIFFERENCE:
+        return _verify_strong_group_difference(claim, evidence)
     raise ValueError(f"Unhandled supported claim type: {claim.claim_type}")
 
 

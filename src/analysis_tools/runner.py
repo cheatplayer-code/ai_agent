@@ -86,7 +86,8 @@ def _select_tool_specs(
     freq_columns = [
         name
         for name in _columns_for_types(schema, {"string", "boolean"})
-        if name not in empty_columns
+        # Guardrail: exclude entity-like IDs from categorical insights/charts.
+        if name not in empty_columns and name not in id_like
     ]
 
     selected: list[tuple[ToolSpec, DetectedSchema]] = []
@@ -119,6 +120,31 @@ def _select_tool_specs(
             if not datetime_columns:
                 continue
             selected.append((tool, _filtered_schema(schema, set(datetime_columns))))
+            continue
+
+        if tool.tool_id in {"period_change_summary", "temporal_trend_summary", "temporal_anomaly_summary"}:
+            if not datetime_columns or not numeric_non_id:
+                continue
+            selected.append(
+                (
+                    tool,
+                    _filtered_schema(schema, set(datetime_columns).union(set(numeric_non_id))),
+                )
+            )
+            continue
+
+        if tool.tool_id == "category_share_summary":
+            if not freq_columns:
+                continue
+            scoped = set(freq_columns).union(set(numeric_non_id))
+            selected.append((tool, _filtered_schema(schema, scoped)))
+            continue
+
+        if tool.tool_id == "segment_performance_summary":
+            if not freq_columns or not numeric_non_id:
+                continue
+            scoped = set(freq_columns).union(set(numeric_non_id))
+            selected.append((tool, _filtered_schema(schema, scoped)))
             continue
 
         selected.append((tool, schema))

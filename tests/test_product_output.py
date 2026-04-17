@@ -9,10 +9,12 @@ from typing import Any
 from src.agent_profile.profile import build_dataset_profile
 from src.analysis_tools.runner import run_analysis_tools, select_analysis_tools
 from src.claims_generator.generator import generate_claims
+from src.core.enums import Severity
 from src.core.policy import ExecutionPolicy
 from src.data_quality_checker.runner import run_dq_suite
 from src.file_loader.loader import load_table
 from src.product_output.generator import build_product_output
+from src.report_builder.schema import InsightClaim, VerificationResult, VerificationSuiteResult
 from src.schema_detector.detect import detect_schema
 from src.verification_layer.verifier import verify_claims
 
@@ -102,3 +104,109 @@ def test_recommendations_are_sensible_for_dirty_and_dates() -> None:
 def test_skipped_tools_include_expected_skip_reasons() -> None:
     output = _product_output_for_fixture("dates.xlsx", sheet_name="DataSheet")
     assert any(reason.startswith("correlation_scan: skipped because") for reason in output["skipped_tools"])
+
+
+def test_product_output_prioritizes_verified_domain_claims_in_findings_and_recommendations() -> None:
+    output = build_product_output(
+        profile={
+            "dominant_mode": "temporal",
+            "poor_data_quality": False,
+            "tiny_dataset": False,
+            "has_datetime": True,
+            "has_numeric_pairs": True,
+            "string_column_count": 1,
+            "boolean_column_count": 0,
+            "empty_column_count": 0,
+            "numeric_column_count": 1,
+            "id_like_column_count": 0,
+            "datetime_column_count": 1,
+            "normalized_columns": ["order_date", "region", "revenue"],
+        },
+        dq_suite=None,
+        evidence=[
+            {
+                "evidence_id": "dom:1",
+                "source": "analysis_tools.category_share_summary",
+                "metric_name": "dominant_category_share",
+                "value": {"top_category": "Category A", "top_category_share": 0.42},
+                "details": {},
+            },
+            {
+                "evidence_id": "anom:1",
+                "source": "analysis_tools.temporal_anomaly_summary",
+                "metric_name": "temporal_anomaly_score",
+                "value": {"period_label": "May", "z_score": -2.8},
+                "details": {},
+            },
+            {
+                "evidence_id": "under:1",
+                "source": "analysis_tools.segment_performance_summary",
+                "metric_name": "segment_underperformance_score",
+                "value": {"underperforming_segment": "South", "underperformance_ratio": 0.73, "stable_volume": True},
+                "details": {},
+            },
+        ],
+        claims=[
+            InsightClaim(
+                claim_id="c1",
+                claim_type="dominant_category",
+                statement="",
+                evidence_refs=[],
+                confidence=None,
+            ),
+            InsightClaim(
+                claim_id="c2",
+                claim_type="time_anomaly_detected",
+                statement="",
+                evidence_refs=[],
+                confidence=None,
+            ),
+            InsightClaim(
+                claim_id="c3",
+                claim_type="segment_underperformance",
+                statement="",
+                evidence_refs=[],
+                confidence=None,
+            ),
+        ],
+        verification=VerificationSuiteResult(
+            success=True,
+            results=[
+                VerificationResult(
+                    claim_id="c1",
+                    verified=True,
+                    severity=Severity.INFO,
+                    reason="",
+                    evidence_refs=["dom:1"],
+                    details={"top_category": "Category A", "top_category_share": 0.42},
+                ),
+                VerificationResult(
+                    claim_id="c2",
+                    verified=True,
+                    severity=Severity.INFO,
+                    reason="",
+                    evidence_refs=["anom:1"],
+                    details={"period_label": "May", "z_score": -2.8},
+                ),
+                VerificationResult(
+                    claim_id="c3",
+                    verified=True,
+                    severity=Severity.INFO,
+                    reason="",
+                    evidence_refs=["under:1"],
+                    details={
+                        "underperforming_segment": "South",
+                        "underperformance_ratio": 0.73,
+                        "stable_volume": True,
+                    },
+                ),
+            ],
+            meta={},
+        ),
+        selected_tool_ids=["category_share_summary", "temporal_anomaly_summary", "segment_performance_summary"],
+    )
+
+    assert any("Category A generated 42.0%" in finding for finding in output["key_findings"])
+    assert any("May is anomalous" in finding for finding in output["key_findings"])
+    assert any("South underperforms peers despite stable volume" in finding for finding in output["key_findings"])
+    assert any("anomalous period" in rec.lower() for rec in output["recommendations"])

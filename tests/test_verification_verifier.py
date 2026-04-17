@@ -295,3 +295,90 @@ def test_output_matches_frozen_verification_suite_schema() -> None:
     reparsed = VerificationSuiteResult(**suite.model_dump())
     assert set(reparsed.model_dump().keys()) == {"success", "results", "meta"}
     assert reparsed.meta == {"claim_count": 1, "verified_count": 0, "unverified_count": 1}
+
+
+def test_new_claim_types_verify_when_thresholds_are_met() -> None:
+    claims = [
+        _claim("c_trend", "trend_increase"),
+        _claim("c_dom", "dominant_category"),
+        _claim("c_anom", "time_anomaly_detected"),
+        _claim("c_seg", "segment_underperformance"),
+        _claim("c_peak", "peak_period_detected"),
+        _claim("c_trough", "trough_period_detected"),
+        _claim("c_diff", "strong_group_difference"),
+    ]
+    evidence = [
+        {
+            "evidence_id": "trend:1",
+            "source": "analysis_tools.temporal_trend_summary",
+            "metric_name": "trend_slope",
+            "value": {"direction": "increasing", "period_count": 8, "slope_ratio": 0.03},
+            "details": {},
+        },
+        {
+            "evidence_id": "dominant:1",
+            "source": "analysis_tools.category_share_summary",
+            "metric_name": "dominant_category_share",
+            "value": {"top_category": "A", "top_category_share": 0.44},
+            "details": {},
+        },
+        {
+            "evidence_id": "anomaly:1",
+            "source": "analysis_tools.temporal_anomaly_summary",
+            "metric_name": "temporal_anomaly_score",
+            "value": {"period_label": "2024-05", "period_count": 8, "z_score": 2.9},
+            "details": {},
+        },
+        {
+            "evidence_id": "segment:1",
+            "source": "analysis_tools.segment_performance_summary",
+            "metric_name": "segment_underperformance_score",
+            "value": {"underperforming_segment": "South", "underperformance_ratio": 0.72, "support_count": 8},
+            "details": {},
+        },
+        {
+            "evidence_id": "peak:1",
+            "source": "analysis_tools.temporal_trend_summary",
+            "metric_name": "peak_period_value",
+            "value": {"period_label": "2024-06", "value": 200},
+            "details": {},
+        },
+        {
+            "evidence_id": "trough:1",
+            "source": "analysis_tools.temporal_trend_summary",
+            "metric_name": "trough_period_value",
+            "value": {"period_label": "2024-05", "value": 80},
+            "details": {},
+        },
+        {
+            "evidence_id": "diff:1",
+            "source": "analysis_tools.segment_performance_summary",
+            "metric_name": "strong_group_difference",
+            "value": {"top_segment": "North", "bottom_segment": "South", "top_bottom_ratio": 1.9},
+            "details": {},
+        },
+    ]
+    suite = verify_claims(claims=claims, evidence=evidence, dq_suite=None)
+    assert all(result.verified for result in suite.results)
+
+
+def test_new_claim_types_fail_when_support_is_weak() -> None:
+    claims = [_claim("c_trend", "trend_increase"), _claim("c_seg", "segment_underperformance")]
+    evidence = [
+        {
+            "evidence_id": "trend:weak",
+            "source": "analysis_tools.temporal_trend_summary",
+            "metric_name": "trend_slope",
+            "value": {"direction": "increasing", "period_count": 3, "slope_ratio": 0.001},
+            "details": {},
+        },
+        {
+            "evidence_id": "segment:weak",
+            "source": "analysis_tools.segment_performance_summary",
+            "metric_name": "segment_underperformance_score",
+            "value": {"underperforming_segment": "South", "underperformance_ratio": 0.72, "support_count": 2},
+            "details": {},
+        },
+    ]
+    suite = verify_claims(claims=claims, evidence=evidence, dq_suite=None)
+    assert [result.verified for result in suite.results] == [False, False]

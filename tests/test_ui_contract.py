@@ -181,6 +181,7 @@ def test_ui_contract_confidence_low_and_fallback_main_finding() -> None:
             "series_field": None,
         }
     ]
+    assert ui["export_state"]["quality_issues_detected"] == 2
 
 
 def test_ui_contract_temporal_main_finding_includes_date_range_when_verified() -> None:

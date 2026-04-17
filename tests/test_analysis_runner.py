@@ -7,7 +7,7 @@ import json
 import pandas as pd
 
 from src.agent_profile.profile import build_dataset_profile
-from src.analysis_tools.runner import run_analysis_tools
+from src.analysis_tools.runner import run_analysis_tools, select_analysis_tools
 from src.core.policy import ExecutionPolicy
 from src.core.types import TableArtifact
 from src.report_builder.schema import ColumnSchema, DetectedSchema
@@ -163,3 +163,46 @@ def test_runner_evidence_shape_and_json_serializable() -> None:
     for row in evidence:
         assert set(row.keys()) == {"evidence_id", "source", "metric_name", "value", "details"}
     json.dumps(evidence)
+
+
+def test_runner_selects_new_temporal_and_segment_tools_when_supported() -> None:
+    df = pd.DataFrame(
+        {
+            "order_date": [
+                "2024-01-01",
+                "2024-02-01",
+                "2024-03-01",
+                "2024-04-01",
+                "2024-05-01",
+                "2024-06-01",
+            ],
+            "region": ["North", "North", "South", "South", "East", "East"],
+            "revenue": [100, 120, 80, 85, 60, 62],
+        }
+    )
+    table = _table(df)
+    schema = _schema([("order_date", "datetime"), ("region", "string"), ("revenue", "float")])
+    profile = build_dataset_profile(table=table, schema=schema)
+
+    selected = select_analysis_tools(table=table, schema=schema, profile=profile)
+    assert "period_change_summary" in selected
+    assert "temporal_trend_summary" in selected
+    assert "category_share_summary" in selected
+    assert "segment_performance_summary" in selected
+
+
+def test_runner_is_conservative_when_temporal_coverage_is_tiny() -> None:
+    df = pd.DataFrame(
+        {
+            "order_date": ["2024-01-01", "2024-02-01", "2024-03-01"],
+            "revenue": [100, 101, 99],
+        }
+    )
+    table = _table(df)
+    schema = _schema([("order_date", "datetime"), ("revenue", "float")])
+    profile = build_dataset_profile(table=table, schema=schema)
+
+    evidence = run_analysis_tools(table=table, schema=schema, policy=ExecutionPolicy(), profile=profile)
+    metric_names = {row["metric_name"] for row in evidence}
+    assert "trend_slope" not in metric_names
+    assert "temporal_anomaly_score" not in metric_names
