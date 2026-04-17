@@ -1,0 +1,73 @@
+{
+  "variants": {
+    "strict_json_minimal": {
+      "parse_success_rate": 1.0,
+      "exact_key_match_rate": 1.0,
+      "schema_valid_rate": 1.0,
+      "faithfulness_pass_rate": 0.1,
+      "recommendation_grounding_rate": 1.0,
+      "confidence_calibration_rate": 0.5,
+      "style_pass_rate": 1.0,
+      "overall_pass_rate": 0.0,
+      "total_rows": 10,
+      "failure_reasons": {
+        "faithfulness_fail": 9,
+        "confidence_calibration_fail": 5
+      }
+    },
+    "strict_json_grounded": {
+      "parse_success_rate": 1.0,
+      "exact_key_match_rate": 1.0,
+      "schema_valid_rate": 1.0,
+      "faithfulness_pass_rate": 0.1,
+      "recommendation_grounding_rate": 1.0,
+      "confidence_calibration_rate": 0.5,
+      "style_pass_rate": 1.0,
+      "overall_pass_rate": 0.0,
+      "total_rows": 10,
+      "failure_reasons": {
+        "faithfulness_fail": 9,
+        "confidence_calibration_fail": 5
+      }
+    },
+    "strict_json_grounded_fewshot": {
+      "parse_success_rate": 1.0,
+      "exact_key_match_rate": 1.0,
+      "schema_valid_rate": 1.0,
+      "faithfulness_pass_rate": 0.0,
+      "recommendation_grounding_rate": 1.0,
+      "confidence_calibration_rate": 0.5,
+      "style_pass_rate": 1.0,
+      "overall_pass_rate": 0.0,
+      "total_rows": 10,
+      "failure_reasons": {
+        "faithfulness_fail": 10,
+        "confidence_calibration_fail": 5
+      }
+    },
+    "strict_json_ultra_conservative": {
+      "parse_success_rate": 1.0,
+      "exact_key_match_rate": 1.0,
+      "schema_valid_rate": 1.0,
+      "faithfulness_pass_rate": 0.1,
+      "recommendation_grounding_rate": 1.0,
+      "confidence_calibration_rate": 0.5,
+      "style_pass_rate": 1.0,
+      "overall_pass_rate": 0.0,
+      "total_rows": 10,
+      "failure_reasons": {
+        "faithfulness_fail": 9,
+        "confidence_calibration_fail": 5
+      }
+    }
+  },
+  "best_variants": {
+    "best_variant_by_overall_pass": "strict_json_grounded",
+    "best_variant_by_faithfulness": "strict_json_grounded",
+    "best_variant_by_confidence_calibration": "strict_json_grounded"
+  },
+  "backend": "mock",
+  "model": null,
+  "dataset": "valid.jsonl",
+  "max_samples": 10
+}

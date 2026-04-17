@@ -1,0 +1,9 @@
+Order ID,Product,Region,Quantity,Unit Price,Order Date,Returned
+A1001,Notebook,North,12,2.5,2026-01-05,no
+A1002,Pen,South,40,1.2,2026-01-06,no
+A1003,Marker,West,15,3.1,2026-01-07,yes
+A1004,Folder,East,22,4.0,2026-01-08,no
+A1005,Notebook,North,18,2.5,2026-01-09,no
+A1006,Pen,South,35,1.2,2026-01-10,no
+A1007,Marker,West,11,3.1,2026-01-11,no
+A1008,Folder,East,19,4.0,2026-01-12,yes

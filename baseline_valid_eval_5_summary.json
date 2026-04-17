@@ -1,0 +1,48 @@
+{
+  "total_rows": 5,
+  "metrics": {
+    "parse_success": {
+      "count": 5,
+      "rate": 1.0
+    },
+    "exact_key_match": {
+      "count": 5,
+      "rate": 1.0
+    },
+    "schema_valid": {
+      "count": 5,
+      "rate": 1.0
+    },
+    "faithfulness_pass": {
+      "count": 1,
+      "rate": 0.2
+    },
+    "recommendation_grounding_pass": {
+      "count": 5,
+      "rate": 1.0
+    },
+    "confidence_calibration_pass": {
+      "count": 1,
+      "rate": 0.2
+    },
+    "style_pass": {
+      "count": 5,
+      "rate": 1.0
+    },
+    "overall_pass": {
+      "count": 0,
+      "rate": 0.0
+    }
+  },
+  "domain_counts": {
+    "sales": 1,
+    "survey": 1,
+    "school": 1,
+    "generic": 1,
+    "messy": 1
+  },
+  "failure_reasons": {
+    "faithfulness_fail": 4,
+    "confidence_calibration_fail": 4
+  }
+}

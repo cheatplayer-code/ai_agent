@@ -1,0 +1,20 @@
+{
+  "files": [
+    "clean.csv",
+    "dirty.csv",
+    "correlation.csv",
+    "dates.xlsx",
+    "collision_columns.csv",
+    "edge_small.csv",
+    "all_null_column.csv"
+  ],
+  "notes": {
+    "clean.csv": "Mostly clean sales-like dataset with no deliberate duplicates and no missing values.",
+    "dirty.csv": "Contains missing values, a duplicate row, a constant column, and an empty column.",
+    "correlation.csv": "Two numeric columns with strong positive correlation.",
+    "dates.xlsx": "Workbook with DataSheet and Archive sheets; Event Date supports datetime/date coverage tests.",
+    "collision_columns.csv": "Original column names intentionally collide after normalization.",
+    "edge_small.csv": "Very small 2-row dataset for edge-case tests.",
+    "all_null_column.csv": "Contains one all-null column to test weak schema and empty-column detection."
+  }
+}

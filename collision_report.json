@@ -1,0 +1,426 @@
+{
+  "report_version": "0.1.0",
+  "generated_at": null,
+  "policy": {
+    "head": 5,
+    "tail": 5,
+    "sample": 20,
+    "max_rows": 10000,
+    "max_cols": 500,
+    "max_cells": 500000,
+    "max_categories_preview": 10,
+    "summary_top_k": 5,
+    "random_state": 42,
+    "lazy": true,
+    "rounding_digits": 4
+  },
+  "input_table": {
+    "source_path": "tests/fixtures/collision_columns.csv",
+    "file_type": "csv",
+    "sheet_name": null,
+    "row_count": 3,
+    "column_count": 5,
+    "normalized_columns": [
+      "order_id",
+      "order_id_2",
+      "order_id_3",
+      "order_id_4",
+      "value"
+    ]
+  },
+  "schema": {
+    "columns": [
+      {
+        "name": "order_id",
+        "detected_type": "string",
+        "nullable": false,
+        "unique_count": 3,
+        "unique_ratio": 1.0,
+        "non_null_count": 3,
+        "confidence": 1.0
+      },
+      {
+        "name": "order_id_2",
+        "detected_type": "string",
+        "nullable": false,
+        "unique_count": 3,
+        "unique_ratio": 1.0,
+        "non_null_count": 3,
+        "confidence": 1.0
+      },
+      {
+        "name": "order_id_3",
+        "detected_type": "string",
+        "nullable": false,
+        "unique_count": 3,
+        "unique_ratio": 1.0,
+        "non_null_count": 3,
+        "confidence": 1.0
+      },
+      {
+        "name": "order_id_4",
+        "detected_type": "string",
+        "nullable": false,
+        "unique_count": 3,
+        "unique_ratio": 1.0,
+        "non_null_count": 3,
+        "confidence": 1.0
+      },
+      {
+        "name": "value",
+        "detected_type": "integer",
+        "nullable": false,
+        "unique_count": 3,
+        "unique_ratio": 1.0,
+        "non_null_count": 3,
+        "confidence": 1.0
+      }
+    ],
+    "sampled_rows": 3,
+    "notes": []
+  },
+  "dq_suite": {
+    "suite_id": "dq_suite_v1",
+    "success": true,
+    "statistics": {
+      "evaluated_count": 6,
+      "success_count": 6,
+      "failure_count": 0,
+      "error_count": 0,
+      "warning_count": 1,
+      "info_count": 0
+    },
+    "results": [
+      {
+        "check_id": "missing_values",
+        "check_name": "Missing Values",
+        "severity": "error",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "affected_column_count": 0,
+          "total_missing_cells": 0
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "duplicate_rows",
+        "check_name": "Duplicate Rows",
+        "severity": "warning",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "duplicate_row_count": 0
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "duplicate_columns",
+        "check_name": "Duplicate Columns",
+        "severity": "warning",
+        "success": true,
+        "issues": [
+          {
+            "issue_id": "duplicate_columns:table",
+            "category": "dq",
+            "severity": "warning",
+            "code": "DUPLICATE_COLUMNS",
+            "message": "Table contains duplicate normalized column names.",
+            "location": null,
+            "details": {
+              "duplicate_columns": [
+                "order_id"
+              ]
+            },
+            "exception_info": null
+          }
+        ],
+        "metrics": {
+          "duplicate_column_count": 1
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "high_cardinality",
+        "check_name": "High Cardinality",
+        "severity": "warning",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "affected_column_count": 0
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "constant_column",
+        "check_name": "Constant Column",
+        "severity": "warning",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "affected_column_count": 0
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "empty_column",
+        "check_name": "Empty Column",
+        "severity": "warning",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "affected_column_count": 0
+        },
+        "exception_info": null
+      }
+    ],
+    "meta": {
+      "lazy": true
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "column_frequency:order_id",
+      "source": "analysis_tools.column_frequency",
+      "metric_name": "top_value_counts",
+      "value": [
+        {
+          "value": "A1",
+          "count": 1,
+          "ratio": 0.3333
+        },
+        {
+          "value": "A2",
+          "count": 1,
+          "ratio": 0.3333
+        },
+        {
+          "value": "A3",
+          "count": 1,
+          "ratio": 0.3333
+        }
+      ],
+      "details": {
+        "column_name": "order_id",
+        "top_k": 5,
+        "non_null_count": 3
+      }
+    },
+    {
+      "evidence_id": "column_frequency:order_id_2",
+      "source": "analysis_tools.column_frequency",
+      "metric_name": "top_value_counts",
+      "value": [
+        {
+          "value": "B1",
+          "count": 1,
+          "ratio": 0.3333
+        },
+        {
+          "value": "B2",
+          "count": 1,
+          "ratio": 0.3333
+        },
+        {
+          "value": "B3",
+          "count": 1,
+          "ratio": 0.3333
+        }
+      ],
+      "details": {
+        "column_name": "order_id_2",
+        "top_k": 5,
+        "non_null_count": 3
+      }
+    },
+    {
+      "evidence_id": "column_frequency:order_id_3",
+      "source": "analysis_tools.column_frequency",
+      "metric_name": "top_value_counts",
+      "value": [
+        {
+          "value": "C1",
+          "count": 1,
+          "ratio": 0.3333
+        },
+        {
+          "value": "C2",
+          "count": 1,
+          "ratio": 0.3333
+        },
+        {
+          "value": "C3",
+          "count": 1,
+          "ratio": 0.3333
+        }
+      ],
+      "details": {
+        "column_name": "order_id_3",
+        "top_k": 5,
+        "non_null_count": 3
+      }
+    },
+    {
+      "evidence_id": "column_frequency:order_id_4",
+      "source": "analysis_tools.column_frequency",
+      "metric_name": "top_value_counts",
+      "value": [
+        {
+          "value": "D1",
+          "count": 1,
+          "ratio": 0.3333
+        },
+        {
+          "value": "D2",
+          "count": 1,
+          "ratio": 0.3333
+        },
+        {
+          "value": "D3",
+          "count": 1,
+          "ratio": 0.3333
+        }
+      ],
+      "details": {
+        "column_name": "order_id_4",
+        "top_k": 5,
+        "non_null_count": 3
+      }
+    },
+    {
+      "evidence_id": "numeric_summary:value",
+      "source": "analysis_tools.numeric_summary",
+      "metric_name": "numeric_summary",
+      "value": {
+        "count": 3,
+        "min": 10.0,
+        "max": 30.0,
+        "mean": 20.0,
+        "median": 20.0
+      },
+      "details": {
+        "column_name": "value"
+      }
+    },
+    {
+      "evidence_id": "outlier_summary:value",
+      "source": "analysis_tools.outlier_summary",
+      "metric_name": "iqr_outlier_summary",
+      "value": {
+        "count": 3,
+        "q1": 15.0,
+        "q3": 25.0,
+        "iqr": 10.0,
+        "lower_bound": 0.0,
+        "upper_bound": 40.0,
+        "outlier_count": 0,
+        "outlier_ratio": 0.0
+      },
+      "details": {
+        "column_name": "value",
+        "method": "iqr"
+      }
+    }
+  ],
+  "claims": [],
+  "verification": {
+    "success": true,
+    "results": [],
+    "meta": {
+      "claim_count": 0,
+      "verified_count": 0,
+      "unverified_count": 0
+    }
+  },
+  "plan": {
+    "plan_id": "deterministic_plan_v1",
+    "steps": [
+      {
+        "step_id": "step_1_load_table",
+        "step_type": "load_table",
+        "inputs": [],
+        "params": {
+          "source_path": "tests/fixtures/collision_columns.csv",
+          "sheet_name": null
+        },
+        "depends_on": []
+      },
+      {
+        "step_id": "step_2_detect_schema",
+        "step_type": "detect_schema",
+        "inputs": [],
+        "params": {},
+        "depends_on": [
+          "step_1_load_table"
+        ]
+      },
+      {
+        "step_id": "step_3_run_dq_suite",
+        "step_type": "run_dq_suite",
+        "inputs": [],
+        "params": {},
+        "depends_on": [
+          "step_2_detect_schema"
+        ]
+      },
+      {
+        "step_id": "step_4_run_analysis_tools",
+        "step_type": "run_analysis_tools",
+        "inputs": [],
+        "params": {},
+        "depends_on": [
+          "step_3_run_dq_suite"
+        ]
+      },
+      {
+        "step_id": "step_5_verify_claims",
+        "step_type": "verify_claims",
+        "inputs": [],
+        "params": {
+          "claims_provided": false
+        },
+        "depends_on": [
+          "step_4_run_analysis_tools"
+        ]
+      },
+      {
+        "step_id": "step_6_build_report",
+        "step_type": "build_report",
+        "inputs": [],
+        "params": {},
+        "depends_on": [
+          "step_5_verify_claims"
+        ]
+      }
+    ],
+    "meta": {}
+  },
+  "summary": {
+    "rows": 3,
+    "columns": 5,
+    "error_count": 0,
+    "warning_count": 1,
+    "verified_claim_count": 0
+  },
+  "issues": [
+    {
+      "issue_id": "duplicate_columns:table",
+      "category": "dq",
+      "severity": "warning",
+      "code": "DUPLICATE_COLUMNS",
+      "message": "Table contains duplicate normalized column names.",
+      "location": null,
+      "details": {
+        "duplicate_columns": [
+          "order_id"
+        ]
+      },
+      "exception_info": null
+    }
+  ],
+  "meta": {
+    "evidence_count": 6,
+    "claim_count": 0,
+    "issue_count": 1
+  }
+}

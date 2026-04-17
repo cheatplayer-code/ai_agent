@@ -1,0 +1,702 @@
+{
+  "report_version": "0.1.0",
+  "generated_at": null,
+  "policy": {
+    "head": 5,
+    "tail": 5,
+    "sample": 20,
+    "max_rows": 10000,
+    "max_cols": 500,
+    "max_cells": 500000,
+    "max_categories_preview": 10,
+    "summary_top_k": 5,
+    "random_state": 42,
+    "lazy": true,
+    "rounding_digits": 4
+  },
+  "input_table": {
+    "source_path": "tests/fixtures/dirty.csv",
+    "file_type": "csv",
+    "sheet_name": null,
+    "row_count": 7,
+    "column_count": 6,
+    "normalized_columns": [
+      "id",
+      "name",
+      "score",
+      "status",
+      "constant_flag",
+      "empty_notes"
+    ]
+  },
+  "detected_schema": {
+    "columns": [
+      {
+        "name": "id",
+        "detected_type": "integer",
+        "nullable": false,
+        "unique_count": 6,
+        "unique_ratio": 0.8571428571428571,
+        "non_null_count": 7,
+        "confidence": 1.0
+      },
+      {
+        "name": "name",
+        "detected_type": "string",
+        "nullable": true,
+        "unique_count": 5,
+        "unique_ratio": 0.8333333333333334,
+        "non_null_count": 6,
+        "confidence": 1.0
+      },
+      {
+        "name": "score",
+        "detected_type": "integer",
+        "nullable": true,
+        "unique_count": 4,
+        "unique_ratio": 0.8,
+        "non_null_count": 5,
+        "confidence": 1.0
+      },
+      {
+        "name": "status",
+        "detected_type": "string",
+        "nullable": true,
+        "unique_count": 2,
+        "unique_ratio": 0.4,
+        "non_null_count": 5,
+        "confidence": 1.0
+      },
+      {
+        "name": "constant_flag",
+        "detected_type": "string",
+        "nullable": false,
+        "unique_count": 1,
+        "unique_ratio": 0.14285714285714285,
+        "non_null_count": 7,
+        "confidence": 1.0
+      },
+      {
+        "name": "empty_notes",
+        "detected_type": "string",
+        "nullable": true,
+        "unique_count": 0,
+        "unique_ratio": 0.0,
+        "non_null_count": 0,
+        "confidence": 0.1
+      }
+    ],
+    "sampled_rows": 7,
+    "notes": [
+      "column empty_notes had only null values"
+    ]
+  },
+  "dq_suite": {
+    "suite_id": "dq_suite_v1",
+    "success": false,
+    "statistics": {
+      "evaluated_count": 6,
+      "success_count": 5,
+      "failure_count": 1,
+      "error_count": 4,
+      "warning_count": 3,
+      "info_count": 0
+    },
+    "results": [
+      {
+        "check_id": "missing_values",
+        "check_name": "Missing Values",
+        "severity": "error",
+        "success": false,
+        "issues": [
+          {
+            "issue_id": "missing_values:name",
+            "category": "dq",
+            "severity": "error",
+            "code": "MISSING_VALUES",
+            "message": "Column 'name' contains 1 missing values.",
+            "location": {
+              "row_number": null,
+              "column_name": "name",
+              "column_index": null,
+              "sheet_name": null
+            },
+            "details": {
+              "missing_count": 1
+            },
+            "exception_info": null
+          },
+          {
+            "issue_id": "missing_values:score",
+            "category": "dq",
+            "severity": "error",
+            "code": "MISSING_VALUES",
+            "message": "Column 'score' contains 2 missing values.",
+            "location": {
+              "row_number": null,
+              "column_name": "score",
+              "column_index": null,
+              "sheet_name": null
+            },
+            "details": {
+              "missing_count": 2
+            },
+            "exception_info": null
+          },
+          {
+            "issue_id": "missing_values:status",
+            "category": "dq",
+            "severity": "error",
+            "code": "MISSING_VALUES",
+            "message": "Column 'status' contains 2 missing values.",
+            "location": {
+              "row_number": null,
+              "column_name": "status",
+              "column_index": null,
+              "sheet_name": null
+            },
+            "details": {
+              "missing_count": 2
+            },
+            "exception_info": null
+          },
+          {
+            "issue_id": "missing_values:empty_notes",
+            "category": "dq",
+            "severity": "error",
+            "code": "MISSING_VALUES",
+            "message": "Column 'empty_notes' contains 7 missing values.",
+            "location": {
+              "row_number": null,
+              "column_name": "empty_notes",
+              "column_index": null,
+              "sheet_name": null
+            },
+            "details": {
+              "missing_count": 7
+            },
+            "exception_info": null
+          }
+        ],
+        "metrics": {
+          "affected_column_count": 4,
+          "total_missing_cells": 12
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "duplicate_rows",
+        "check_name": "Duplicate Rows",
+        "severity": "warning",
+        "success": true,
+        "issues": [
+          {
+            "issue_id": "duplicate_rows:table",
+            "category": "dq",
+            "severity": "warning",
+            "code": "DUPLICATE_ROWS",
+            "message": "Table contains 1 duplicate rows.",
+            "location": null,
+            "details": {
+              "duplicate_row_count": 1
+            },
+            "exception_info": null
+          }
+        ],
+        "metrics": {
+          "duplicate_row_count": 1
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "duplicate_columns",
+        "check_name": "Duplicate Columns",
+        "severity": "warning",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "duplicate_column_count": 0
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "high_cardinality",
+        "check_name": "High Cardinality",
+        "severity": "warning",
+        "success": true,
+        "issues": [],
+        "metrics": {
+          "affected_column_count": 0
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "constant_column",
+        "check_name": "Constant Column",
+        "severity": "warning",
+        "success": true,
+        "issues": [
+          {
+            "issue_id": "constant_column:constant_flag",
+            "category": "dq",
+            "severity": "warning",
+            "code": "CONSTANT_COLUMN",
+            "message": "Column 'constant_flag' has a single non-null value.",
+            "location": {
+              "row_number": null,
+              "column_name": "constant_flag",
+              "column_index": null,
+              "sheet_name": null
+            },
+            "details": {
+              "non_null_count": 7
+            },
+            "exception_info": null
+          }
+        ],
+        "metrics": {
+          "affected_column_count": 1
+        },
+        "exception_info": null
+      },
+      {
+        "check_id": "empty_column",
+        "check_name": "Empty Column",
+        "severity": "warning",
+        "success": true,
+        "issues": [
+          {
+            "issue_id": "empty_column:empty_notes",
+            "category": "dq",
+            "severity": "warning",
+            "code": "EMPTY_COLUMN",
+            "message": "Column 'empty_notes' has no non-null values.",
+            "location": {
+              "row_number": null,
+              "column_name": "empty_notes",
+              "column_index": null,
+              "sheet_name": null
+            },
+            "details": {},
+            "exception_info": null
+          }
+        ],
+        "metrics": {
+          "affected_column_count": 1
+        },
+        "exception_info": null
+      }
+    ],
+    "meta": {
+      "lazy": true
+    }
+  },
+  "evidence": [
+    {
+      "evidence_id": "column_frequency:name",
+      "source": "analysis_tools.column_frequency",
+      "metric_name": "top_value_counts",
+      "value": [
+        {
+          "value": "Dina",
+          "count": 2,
+          "ratio": 0.3333
+        },
+        {
+          "value": "Alice",
+          "count": 1,
+          "ratio": 0.1667
+        },
+        {
+          "value": "Bob",
+          "count": 1,
+          "ratio": 0.1667
+        },
+        {
+          "value": "Eli",
+          "count": 1,
+          "ratio": 0.1667
+        },
+        {
+          "value": "Faye",
+          "count": 1,
+          "ratio": 0.1667
+        }
+      ],
+      "details": {
+        "column_name": "name",
+        "top_k": 5,
+        "non_null_count": 6
+      }
+    },
+    {
+      "evidence_id": "column_frequency:status",
+      "source": "analysis_tools.column_frequency",
+      "metric_name": "top_value_counts",
+      "value": [
+        {
+          "value": "active",
+          "count": 4,
+          "ratio": 0.8
+        },
+        {
+          "value": "inactive",
+          "count": 1,
+          "ratio": 0.2
+        }
+      ],
+      "details": {
+        "column_name": "status",
+        "top_k": 5,
+        "non_null_count": 5
+      }
+    },
+    {
+      "evidence_id": "column_frequency:constant_flag",
+      "source": "analysis_tools.column_frequency",
+      "metric_name": "top_value_counts",
+      "value": [
+        {
+          "value": "CONST",
+          "count": 7,
+          "ratio": 1.0
+        }
+      ],
+      "details": {
+        "column_name": "constant_flag",
+        "top_k": 5,
+        "non_null_count": 7
+      }
+    },
+    {
+      "evidence_id": "numeric_summary:score",
+      "source": "analysis_tools.numeric_summary",
+      "metric_name": "numeric_summary",
+      "value": {
+        "count": 5,
+        "min": 65.0,
+        "max": 91.0,
+        "mean": 81.4,
+        "median": 88.0
+      },
+      "details": {
+        "column_name": "score"
+      }
+    },
+    {
+      "evidence_id": "outlier_summary:score",
+      "source": "analysis_tools.outlier_summary",
+      "metric_name": "iqr_outlier_summary",
+      "value": {
+        "count": 5,
+        "q1": 72.0,
+        "q3": 91.0,
+        "iqr": 19.0,
+        "lower_bound": 43.5,
+        "upper_bound": 119.5,
+        "outlier_count": 0,
+        "outlier_ratio": 0.0
+      },
+      "details": {
+        "column_name": "score",
+        "method": "iqr"
+      }
+    }
+  ],
+  "claims": [],
+  "verification": {
+    "success": true,
+    "results": [],
+    "meta": {
+      "claim_count": 0,
+      "verified_count": 0,
+      "unverified_count": 0
+    }
+  },
+  "plan": {
+    "plan_id": "deterministic_plan_v2",
+    "steps": [
+      {
+        "step_id": "step_1_load_table",
+        "step_type": "load_table",
+        "inputs": [],
+        "params": {
+          "source_path": "tests/fixtures/dirty.csv",
+          "sheet_name": null
+        },
+        "depends_on": []
+      },
+      {
+        "step_id": "step_2_detect_schema",
+        "step_type": "detect_schema",
+        "inputs": [],
+        "params": {},
+        "depends_on": [
+          "step_1_load_table"
+        ]
+      },
+      {
+        "step_id": "step_3_run_dq_suite",
+        "step_type": "run_dq_suite",
+        "inputs": [],
+        "params": {},
+        "depends_on": [
+          "step_2_detect_schema"
+        ]
+      },
+      {
+        "step_id": "step_4_build_dataset_profile",
+        "step_type": "build_dataset_profile",
+        "inputs": [],
+        "params": {
+          "dominant_mode": "dq_first"
+        },
+        "depends_on": [
+          "step_3_run_dq_suite"
+        ]
+      },
+      {
+        "step_id": "step_5_select_tools",
+        "step_type": "select_tools",
+        "inputs": [],
+        "params": {
+          "selected_tool_ids": [
+            "column_frequency",
+            "numeric_summary",
+            "outlier_summary"
+          ]
+        },
+        "depends_on": [
+          "step_4_build_dataset_profile"
+        ]
+      },
+      {
+        "step_id": "step_6_run_analysis_tools",
+        "step_type": "run_analysis_tools",
+        "inputs": [],
+        "params": {
+          "selected_tool_ids": [
+            "column_frequency",
+            "numeric_summary",
+            "outlier_summary"
+          ]
+        },
+        "depends_on": [
+          "step_5_select_tools"
+        ]
+      },
+      {
+        "step_id": "step_7_generate_claims",
+        "step_type": "generate_claims",
+        "inputs": [],
+        "params": {
+          "auto_claims_enabled": true,
+          "claims_provided": false
+        },
+        "depends_on": [
+          "step_6_run_analysis_tools"
+        ]
+      },
+      {
+        "step_id": "step_8_verify_claims",
+        "step_type": "verify_claims",
+        "inputs": [],
+        "params": {
+          "claims_provided": false
+        },
+        "depends_on": [
+          "step_7_generate_claims"
+        ]
+      },
+      {
+        "step_id": "step_9_build_report",
+        "step_type": "build_report",
+        "inputs": [],
+        "params": {},
+        "depends_on": [
+          "step_8_verify_claims"
+        ]
+      }
+    ],
+    "meta": {
+      "source_path": "tests/fixtures/dirty.csv",
+      "sheet_name": null,
+      "claims_provided": false,
+      "dominant_mode": "dq_first",
+      "selected_tool_ids": [
+        "column_frequency",
+        "numeric_summary",
+        "outlier_summary"
+      ],
+      "auto_claims_enabled": true
+    }
+  },
+  "dataset_kind": "generic_messy",
+  "selected_path_reason": "Selected dq-first analysis path because the dataset contains multiple quality issues.",
+  "executive_summary": "The dataset is quality-constrained and contains notable data quality issues. Conclusions should remain cautious until missing values are addressed.",
+  "key_findings": [
+    "Missing values detected in 4 columns (12 cells total).",
+    "Duplicate rows detected: 1.",
+    "Empty column detected: 1.",
+    "Constant-value column detected in constant_flag."
+  ],
+  "recommendations": [
+    "Clean missing values before downstream analysis.",
+    "Review duplicate rows and remove redundant records.",
+    "Remove or populate empty columns before further analysis."
+  ],
+  "skipped_tools": [
+    "correlation_scan: skipped because fewer than two meaningful numeric non-ID columns were available.",
+    "date_coverage: skipped because no datetime columns were detected."
+  ],
+  "file_name": "dirty.csv",
+  "analysis_mode_label": "Data Quality First",
+  "data_quality_score": 16,
+  "main_finding": "Data quality attention needed: Missing values detected in 4 columns (12 cells total).",
+  "top_issue": "Column 'name' contains 1 missing values.",
+  "confidence_level": "low",
+  "confidence_reason": "Confidence is limited because multiple data quality issues were detected.",
+  "chart_specs": [
+    {
+      "chart_type": "metric_cards",
+      "title": "Key Metrics",
+      "reason": "Provides a concise summary view suitable for all datasets.",
+      "x_field": null,
+      "y_field": null,
+      "series_field": null
+    }
+  ],
+  "export_state": {
+    "summary_ready": true,
+    "insights_generated": 4,
+    "quality_issues_detected": 1,
+    "charts_prepared": 1,
+    "export_available": true
+  },
+  "summary": {
+    "rows": 7,
+    "columns": 6,
+    "error_count": 4,
+    "warning_count": 3,
+    "verified_claim_count": 0
+  },
+  "issues": [
+    {
+      "issue_id": "missing_values:name",
+      "category": "dq",
+      "severity": "error",
+      "code": "MISSING_VALUES",
+      "message": "Column 'name' contains 1 missing values.",
+      "location": {
+        "row_number": null,
+        "column_name": "name",
+        "column_index": null,
+        "sheet_name": null
+      },
+      "details": {
+        "missing_count": 1
+      },
+      "exception_info": null
+    },
+    {
+      "issue_id": "missing_values:score",
+      "category": "dq",
+      "severity": "error",
+      "code": "MISSING_VALUES",
+      "message": "Column 'score' contains 2 missing values.",
+      "location": {
+        "row_number": null,
+        "column_name": "score",
+        "column_index": null,
+        "sheet_name": null
+      },
+      "details": {
+        "missing_count": 2
+      },
+      "exception_info": null
+    },
+    {
+      "issue_id": "missing_values:status",
+      "category": "dq",
+      "severity": "error",
+      "code": "MISSING_VALUES",
+      "message": "Column 'status' contains 2 missing values.",
+      "location": {
+        "row_number": null,
+        "column_name": "status",
+        "column_index": null,
+        "sheet_name": null
+      },
+      "details": {
+        "missing_count": 2
+      },
+      "exception_info": null
+    },
+    {
+      "issue_id": "missing_values:empty_notes",
+      "category": "dq",
+      "severity": "error",
+      "code": "MISSING_VALUES",
+      "message": "Column 'empty_notes' contains 7 missing values.",
+      "location": {
+        "row_number": null,
+        "column_name": "empty_notes",
+        "column_index": null,
+        "sheet_name": null
+      },
+      "details": {
+        "missing_count": 7
+      },
+      "exception_info": null
+    },
+    {
+      "issue_id": "duplicate_rows:table",
+      "category": "dq",
+      "severity": "warning",
+      "code": "DUPLICATE_ROWS",
+      "message": "Table contains 1 duplicate rows.",
+      "location": null,
+      "details": {
+        "duplicate_row_count": 1
+      },
+      "exception_info": null
+    },
+    {
+      "issue_id": "constant_column:constant_flag",
+      "category": "dq",
+      "severity": "warning",
+      "code": "CONSTANT_COLUMN",
+      "message": "Column 'constant_flag' has a single non-null value.",
+      "location": {
+        "row_number": null,
+        "column_name": "constant_flag",
+        "column_index": null,
+        "sheet_name": null
+      },
+      "details": {
+        "non_null_count": 7
+      },
+      "exception_info": null
+    },
+    {
+      "issue_id": "empty_column:empty_notes",
+      "category": "dq",
+      "severity": "warning",
+      "code": "EMPTY_COLUMN",
+      "message": "Column 'empty_notes' has no non-null values.",
+      "location": {
+        "row_number": null,
+        "column_name": "empty_notes",
+        "column_index": null,
+        "sheet_name": null
+      },
+      "details": {},
+      "exception_info": null
+    }
+  ],
+  "meta": {
+    "evidence_count": 5,
+    "claim_count": 0,
+    "issue_count": 7
+  }
+}
