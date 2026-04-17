@@ -354,11 +354,23 @@ def build_chart_payloads(
         if chart_type == "metric_cards":
             data = [summary_cards]
         elif chart_type == "line" and isinstance(x_field, str) and isinstance(y_field, str):
-            data = _line_data(table=table, x_field=x_field, y_field=y_field, series_field=series_field if isinstance(series_field, str) else None)
+            line_series = series_field if isinstance(series_field, str) else None
+            data = _line_data(
+                table=table,
+                x_field=x_field,
+                y_field=y_field,
+                series_field=line_series,
+            )
         elif chart_type == "bar" and isinstance(x_field, str):
             data = _bar_data(table=table, x_field=x_field, evidence=evidence)
         elif chart_type == "scatter" and isinstance(x_field, str) and isinstance(y_field, str):
-            data = _scatter_data(table=table, x_field=x_field, y_field=y_field, series_field=series_field if isinstance(series_field, str) else None)
+            scatter_series = series_field if isinstance(series_field, str) else None
+            data = _scatter_data(
+                table=table,
+                x_field=x_field,
+                y_field=y_field,
+                series_field=scatter_series,
+            )
         else:
             data = []
 
